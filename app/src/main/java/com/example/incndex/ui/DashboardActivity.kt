@@ -20,6 +20,7 @@ class DashboardActivity : AppCompatActivity() {
 
     var totalIncome : Double = 0.0
     var totalExpenses : Double = 0.0
+    var total : Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,7 +34,6 @@ class DashboardActivity : AppCompatActivity() {
                 for (i in userDao.readIncome()) {
                     totalIncome += i.price
                 }
-                binding.tvIncome.text = totalIncome.toString()
             }
 
             if(userDao.readExpenses().isNotEmpty()) {
@@ -43,42 +43,38 @@ class DashboardActivity : AppCompatActivity() {
                 binding.tvExpenses.text = totalExpenses.toString()
             }
 
-            if(totalIncome > 1000 || totalExpenses > 1000){
+            if(totalIncome > totalExpenses){
+                total = totalIncome - totalExpenses
+                binding.tvIncome.text = total.toString()
+            } else
+                binding.tvIncome.text = totalIncome.toString()
+
+            if(total > 1000 || totalExpenses > 1000){
                 binding.tvK.visibility = View.VISIBLE
                 binding.tvExcel.visibility = View.VISIBLE
             } else {
                 binding.tvK.visibility = View.GONE
                 binding.tvExcel.visibility = View.GONE
             }
-
-            if(totalIncome > 0.0 || totalExpenses > 0.0){
-                val total = totalIncome - totalExpenses
-                binding.tvAmount.text = "Total Amount : $total"
-            }
         }
 
         binding.tvIncome.setOnClickListener {
-            if (totalIncome != 0.0) {
-                var intent = Intent(this, ListOfIncomeActivity::class.java)
-                startActivity(intent)
-            } else {
                 var intent = Intent(this, AddIncomeActivity::class.java)
                 startActivity(intent)
-            }
         }
 
         binding.tvExpenses.setOnClickListener {
-            if (totalExpenses != 0.0) {
-                var intent =  Intent(this,ListOfExpensesActivity::class.java)
-                startActivity(intent)
-            } else {
                 var intent = Intent(this, AddExpensesActivity::class.java)
                 startActivity(intent)
-            }
         }
 
         binding.tvK.setOnClickListener {
-            binding.tvIncome.text = getFormatedNumber(totalIncome)
+            if(totalIncome > totalExpenses){
+                total = totalIncome - totalExpenses
+                binding.tvIncome.text = getFormatedNumber(total)
+            } else
+                binding.tvIncome.text = getFormatedNumber(totalIncome)
+
             binding.tvExpenses.text = getFormatedNumber(totalExpenses)
         }
 
@@ -120,7 +116,6 @@ class DashboardActivity : AppCompatActivity() {
             }
 
             withContext(Dispatchers.Main) {
-                binding.tvIncome.text = totalIncome.toString()
                 binding.tvExpenses.text = totalExpenses.toString()
 
                 if (totalIncome > 1000 || totalExpenses > 1000) {
@@ -131,9 +126,9 @@ class DashboardActivity : AppCompatActivity() {
                     binding.tvExcel.visibility = View.GONE
                 }
 
-                if (totalIncome > 0.0 || totalExpenses > 0.0) {
+                if (totalIncome > totalExpenses) {
                     val total = totalIncome - totalExpenses
-                    binding.tvAmount.text = "Total Amount : $total"
+                    binding.tvIncome.text = total.toString()
                 }
             }
         }

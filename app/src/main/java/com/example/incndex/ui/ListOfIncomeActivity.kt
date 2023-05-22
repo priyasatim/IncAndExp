@@ -59,10 +59,6 @@ class ListOfIncomeActivity : AppCompatActivity() {
         binding.searchIncome.clearFocus();
         binding.searchIncome.queryHint = "Search"
 
-        binding.ivBack.setOnClickListener {
-            this.onBackPressed()
-        }
-
         binding.imageviewDate.setOnClickListener {
                 val datePicker = MaterialDatePicker.Builder.dateRangePicker().build()
                 datePicker.show(supportFragmentManager, "DatePicker")
@@ -106,26 +102,6 @@ class ListOfIncomeActivity : AppCompatActivity() {
                 return true
             }
         })
-
-        val activityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                CoroutineScope(Dispatchers.IO).launch {
-                    itemList = userDao.readIncome()
-                    reversedList = itemList.reversed()
-                    withContext(Dispatchers.Main) {
-                        adapter.updateItemList(reversedList, "")
-                    }
-                }
-            }
-        }
-
-
-        binding.flatIconAddIncome.setOnClickListener {
-            var intent = Intent(this, AddIncomeActivity::class.java)
-            intent.putExtra("isList",true)
-            activityLauncher.launch(intent);
-
-        }
 
         binding.ivDelete.setOnClickListener {
             showConfirmationDialog()

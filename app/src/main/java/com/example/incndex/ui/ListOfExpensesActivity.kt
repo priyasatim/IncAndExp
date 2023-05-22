@@ -40,10 +40,6 @@ class ListOfExpensesActivity : AppCompatActivity() {
         binding = ActivityListOfExpensesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.ivBack.setOnClickListener {
-            this.onBackPressed()
-        }
-
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
 
         binding.recyclevieiw.layoutManager = LinearLayoutManager(this)
@@ -115,25 +111,6 @@ class ListOfExpensesActivity : AppCompatActivity() {
 
         }
 
-        val activityLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-
-                CoroutineScope(Dispatchers.IO).launch {
-                    var itemList = userDao.readExpenses()
-                    reversedList = itemList.reversed()
-                    withContext(Dispatchers.Main) {
-                        adapter.updateItemList(reversedList, "")
-                    }
-                }
-
-            }
-        }
-
-        binding.flatIconAddExpenses.setOnClickListener {
-            var intent = Intent(this, AddExpensesActivity::class.java)
-            intent.putExtra("isList",true)
-            activityLauncher.launch(intent)
-        }
 
         binding.ivDelete.setOnClickListener {
             showConfirmationDialog()
