@@ -40,6 +40,10 @@ class ListOfExpensesActivity : AppCompatActivity() {
         binding = ActivityListOfExpensesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.ivBack.setOnClickListener {
+            this.onBackPressed()
+        }
+
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
 
         binding.recyclevieiw.layoutManager = LinearLayoutManager(this)

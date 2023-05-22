@@ -2,6 +2,7 @@ package com.example.incndex.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.example.incndex.data.UserDao
@@ -10,6 +11,7 @@ import com.example.incndex.databinding.ActivityDashboardBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.DecimalFormat
 
 class DashboardActivity : AppCompatActivity() {
@@ -96,5 +98,44 @@ class DashboardActivity : AppCompatActivity() {
             number.toString()
         }
         return numberString
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            totalIncome  = 0.0
+            totalExpenses  = 0.0
+
+            if(userDao.readIncome().isNotEmpty()) {
+                for (i in userDao.readIncome()) {
+                    totalIncome += i.price
+                }
+            }
+
+            if(userDao.readExpenses().isNotEmpty()) {
+                for (i in userDao.readExpenses()) {
+                    totalExpenses += i.price
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                binding.tvIncome.text = totalIncome.toString()
+                binding.tvExpenses.text = totalExpenses.toString()
+
+                if (totalIncome > 1000 || totalExpenses > 1000) {
+                    binding.tvK.visibility = View.VISIBLE
+                    binding.tvExcel.visibility = View.VISIBLE
+                } else {
+                    binding.tvK.visibility = View.GONE
+                    binding.tvExcel.visibility = View.GONE
+                }
+
+                if (totalIncome > 0.0 || totalExpenses > 0.0) {
+                    val total = totalIncome - totalExpenses
+                    binding.tvAmount.text = "Total Amount : $total"
+                }
+            }
+        }
     }
 }

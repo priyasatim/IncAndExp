@@ -24,7 +24,7 @@ interface UserDao {
  @Insert(onConflict = OnConflictStrategy.IGNORE)
  fun addCategory(category : Category)
 
- @Query("SELECT * FROM expense_table")
+ @Query("SELECT * FROM category")
  fun readCategory() : List<Category>
 
  @Delete

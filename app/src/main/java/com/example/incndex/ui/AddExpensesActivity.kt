@@ -97,11 +97,6 @@ class AddExpensesActivity : AppCompatActivity() {
             if(validation()) {
                 CoroutineScope(Dispatchers.IO).launch {
 
-//                if(userDao.readIncome().isNotEmpty()) {
-//                    for (i in userDao.readIncome()) {
-//                        totalIncome += i.price
-//                    }
-//                }
                     val user = Expenses(
                         name = binding.etNote.text.trim().toString(),
                         category = binding.tvCategory.text.trim().toString(),

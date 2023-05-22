@@ -59,6 +59,10 @@ class ListOfIncomeActivity : AppCompatActivity() {
         binding.searchIncome.clearFocus();
         binding.searchIncome.queryHint = "Search"
 
+        binding.ivBack.setOnClickListener {
+            this.onBackPressed()
+        }
+
         binding.imageviewDate.setOnClickListener {
                 val datePicker = MaterialDatePicker.Builder.dateRangePicker().build()
                 datePicker.show(supportFragmentManager, "DatePicker")
