@@ -11,10 +11,12 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.view.isVisible
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.incndex.R
 import com.example.incndex.data.Category
 import com.example.incndex.data.Expenses
 import com.example.incndex.data.Income
+import com.example.incndex.data.PaymentResponse
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
 import com.example.incndex.databinding.ActivityAddIncomeBinding
@@ -29,11 +31,14 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class AddExpensesActivity : AppCompatActivity() {
+class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     private lateinit var binding: ActivityAddIncomeBinding
+    lateinit var paymentMode : String
     lateinit var userDao : UserDao
     var isComingFromList : Boolean = false
     var arrayList = ArrayList<String>()
+    private lateinit var paymentAdapter : PaymentAdapter
+    var listOfPayment : ArrayList<PaymentResponse> = arrayListOf()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +47,19 @@ class AddExpensesActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.ivAdd.setBackgroundResource(R.drawable.ic_minus);
+
+        binding.rcPaymentType.layoutManager = LinearLayoutManager(this,
+            LinearLayoutManager.HORIZONTAL,false)
+        paymentAdapter = PaymentAdapter(this,this)
+        binding.rcPaymentType.adapter = paymentAdapter
+
+        listOfPayment.add(PaymentResponse("Cash",R.drawable.money,false))
+        listOfPayment.add(PaymentResponse("Card",R.drawable.credit,false))
+//        listOfPayment.add(PaymentResponse("UPI",R.drawable.))
+        listOfPayment.add(PaymentResponse("Netbanking",R.drawable.netbanking,false))
+
+        paymentAdapter.paymentList = listOfPayment
+        paymentAdapter.notifyDataSetChanged()
 
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
         if (intent.getBooleanExtra("isList", false)) {
@@ -54,6 +72,12 @@ class AddExpensesActivity : AppCompatActivity() {
                     arrayList.add(i.name)
                 }
             }
+        }
+
+        binding.ivList.setOnClickListener {
+            var intent =
+                Intent(this@AddExpensesActivity, ListOfExpensesActivity::class.java)
+            startActivity(intent)
         }
 
         binding.tvCategory.addTextChangedListener(object : TextWatcher {
@@ -92,7 +116,8 @@ class AddExpensesActivity : AppCompatActivity() {
                         name = binding.etNote.text.trim().toString(),
                         category = binding.tvCategory.text.trim().toString(),
                         price = binding.etAmount.text.trim().toString().toDouble(),
-                        date = currentDate
+                        date = currentDate,
+                        payment_mode = paymentMode
                     )
                     arrayList.add(binding.tvCategory.text.trim().toString())
                     userDao.addCategory(Category(name = binding.tvCategory.text.trim().toString()))
@@ -123,5 +148,9 @@ class AddExpensesActivity : AppCompatActivity() {
             }
             return true
         }
+
+    override fun onItemClick(position: Int) {
+        paymentMode = listOfPayment[position].name
+    }
 
 }

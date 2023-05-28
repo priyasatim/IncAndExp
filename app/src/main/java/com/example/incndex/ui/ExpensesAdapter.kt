@@ -23,6 +23,7 @@ class ExpensesAdapter  : RecyclerView.Adapter<ExpensesAdapter.ViewHolder>(){
                 tvCategory.text=item.category.toString()
                 tvDate.text=item.date.toString()
                 tvAmount.text="₹ " +item.price.toString()
+                tvPayment.text=item.payment_mode.toString()
             }
         }
 

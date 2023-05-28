@@ -5,7 +5,14 @@
     android:layout_height="match_parent"
     android:background="@color/recycle_grey">
 
-
+    <ImageView
+        android:id="@+id/iv_list"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/credit"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/ll_amount"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <LinearLayout
         android:id="@+id/ll_amount"
@@ -43,13 +50,25 @@
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.25" />
 
+    <TextView
+        android:id="@+id/tv_title_payment"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Payment Mode"
+        android:layout_marginTop="12dp"
+        android:textSize="14sp"
+        android:layout_marginHorizontal="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/guideline"/>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rc_payment_type"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/guideline" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_title_payment" />
 
    <TextView
        android:id="@+id/tv_title_category"

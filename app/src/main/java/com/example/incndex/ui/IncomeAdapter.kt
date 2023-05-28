@@ -10,11 +10,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.incndex.data.Income
 import com.example.incndex.databinding.ItemRecordBinding
 
-class IncomeAdapter : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
+class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
     private lateinit var binding: ItemRecordBinding
 
     private var itemList: List<Income> = emptyList()
-    private var filteredItemList: List<Income> = emptyList()
+    var selectedList = ArrayList<Income>()
+    var filteredItemList: List<Income> = emptyList()
 
     inner class ViewHolder : RecyclerView.ViewHolder(binding.root) {
         fun setData(item: Income) {
@@ -23,6 +24,28 @@ class IncomeAdapter : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
                 tvCategory.text = item.category.toString()
                 tvDate.text = item.date.toString()
                 tvAmount.text = "₹ " + item.price.toString()
+                tvPayment.text = item.payment_mode.toString()
+
+                chRecord.setOnCheckedChangeListener { _, isChecked ->
+                    if(isChecked){
+                            selectedList.add(item)
+                            listner.onDelete(selectedList)
+                    }
+                    else
+                    {
+                   if(selectedList.isNotEmpty()){
+                       for(i in selectedList.withIndex()){
+                           Log.d("id_testing",""+item.id + i.value.id)
+                           if(item.id == i.value.id) {
+                                   selectedList.remove(item)
+                                   listner.onDelete(selectedList)
+
+                           }
+                           }
+                       }
+
+                   }
+                }
             }
         }
 
@@ -42,7 +65,6 @@ class IncomeAdapter : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
 
     override fun getItemCount(): Int {
         return filteredItemList.size
-        Log.d("filtehhhhr", "" + filteredItemList.size)
     }
 
     // Update item list and perform search using DiffUtil
@@ -81,5 +103,8 @@ class IncomeAdapter : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
         override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
             return oldList[oldItemPosition] == newList[newItemPosition]
         }
+    }
+    interface onClickListner{
+        fun onDelete(income : List<Income>)
     }
 }

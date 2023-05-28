@@ -9,4 +9,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="recycle_grey">#BCE8E6E6</color>
     <color name="dark_grey">#BCBAB7B7</color>
+    <color name="light_grey">#E1E4E1E1</color>
 </resources>

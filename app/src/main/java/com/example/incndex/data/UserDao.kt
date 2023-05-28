@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import java.util.Date
 
 @Dao
 interface UserDao {
@@ -14,6 +15,9 @@ interface UserDao {
 
  @Query("SELECT * FROM income_table")
  fun readIncome() : List<Income>
+
+ @Query("SELECT * FROM income_table")
+ fun selectIncome() : List<Income>
 
  @Insert(onConflict = OnConflictStrategy.IGNORE)
  fun addExpenses(expenses : Expenses)
@@ -32,4 +36,5 @@ interface UserDao {
 
  @Delete
  fun deleteExpenses(expenses: List<Expenses>)
+
 }

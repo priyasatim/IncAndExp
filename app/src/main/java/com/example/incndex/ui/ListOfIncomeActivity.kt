@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,13 +28,14 @@ import java.util.Date
 import java.util.TimeZone
 
 
-class ListOfIncomeActivity : AppCompatActivity() {
+class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
     private lateinit var adapter: IncomeAdapter
     private lateinit var binding: ActivityListOfIncomeBinding
     lateinit var userDao : UserDao
     private var itemList: List<Income> = emptyList()
     private var alertDialog: AlertDialog? = null
-    var reversedList: List<Income> = emptyList()
+    var reversedList: ArrayList<Income> = ArrayList()
+    var selectedList = ArrayList<Income>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,12 +45,12 @@ class ListOfIncomeActivity : AppCompatActivity() {
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
 
         binding.recyclevieiw.layoutManager = LinearLayoutManager(this)
-        adapter = IncomeAdapter()
+        adapter = IncomeAdapter(this)
         binding.recyclevieiw.adapter = adapter
 
         CoroutineScope(Dispatchers.IO).launch {
             itemList = userDao.readIncome()
-            reversedList = itemList.reversed()
+            reversedList.addAll(itemList.reversed())
 
             withContext(Dispatchers.Main) {
                 adapter.updateItemList(reversedList, "")
@@ -117,13 +119,16 @@ class ListOfIncomeActivity : AppCompatActivity() {
         builder.setPositiveButton("Yes") { dialog: DialogInterface, which: Int ->
             // User clicked "Yes", perform the desired action
             CoroutineScope(Dispatchers.IO).launch {
-                val income = userDao.readIncome()
-                reversedList = income.reversed()
-                userDao.deleteIncome(reversedList)
+                    userDao.deleteIncome(selectedList)
+                val updatedList = userDao.readIncome()
+
+                // Update the UI on the main thread
                 withContext(Dispatchers.Main) {
-                    adapter.updateItemList(reversedList, "")
-                    alertDialog?.dismiss()
+                    // Update the adapter's data set
+                    adapter.filteredItemList = updatedList
+                    adapter.notifyDataSetChanged()
                 }
+                alertDialog?.dismiss()
             }
 
         }
@@ -138,5 +143,11 @@ class ListOfIncomeActivity : AppCompatActivity() {
         alertDialog = builder.create()
         alertDialog?.show()
     }
+
+    override fun onDelete(list: List<Income>) {
+        selectedList.clear()
+        selectedList.addAll(list)
+
+        }
 
 }

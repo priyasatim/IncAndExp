@@ -12,4 +12,5 @@ data class Expenses(
     @ColumnInfo(name = "category")  val category : String,
     @ColumnInfo(name = "price")  val price : Double,
     @ColumnInfo(name = "date")  val date : String,
+    @ColumnInfo(name = "payment_mode")  val payment_mode : String,
 )
