@@ -5,6 +5,10 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.incndex.R
@@ -23,6 +27,7 @@ class PaymentAdapter(var mcontext: Context, var listner: onClickListner) : Recyc
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
+        holder.tvName.setText(paymentList.get(position).name)
             holder.ibPaymentMode.setOnClickListener {
                 listner.onItemClick(position)
                 selectedItemPosition = position
@@ -30,14 +35,14 @@ class PaymentAdapter(var mcontext: Context, var listner: onClickListner) : Recyc
             }
 
             if(selectedItemPosition == position) {
-                holder.ibPaymentMode.setBackgroundResource(paymentList.get(position).profile)
-                holder.ibPaymentMode.setBackgroundColor(Color.parseColor("#ffffff"))
-                holder.ibPaymentMode.setBackgroundResource(R.drawable.border_box)
+                holder.ibPaymentMode.setImageResource(paymentList.get(position).profile)
+               holder.cardLayout.setBackgroundColor(Color.parseColor("#ffffff"))
+                holder.cardLayout.setBackgroundResource(R.drawable.border_box)
             }
             else {
-                holder.ibPaymentMode.setBackgroundResource(paymentList.get(position).profile)
-                holder.ibPaymentMode.setBackgroundColor(Color.parseColor("#E1E4E1E1"))
-                holder.ibPaymentMode.setBackgroundResource(0)
+                holder.ibPaymentMode.setImageResource(paymentList.get(position).profile)
+                holder.cardLayout.setBackgroundColor(Color.parseColor("#E1E4E1E1"))
+                holder.cardLayout.setBackgroundResource(0)
             }
 
     }
@@ -46,7 +51,9 @@ class PaymentAdapter(var mcontext: Context, var listner: onClickListner) : Recyc
 
 
     inner class ViewHolder : RecyclerView.ViewHolder(binding.root) {
-        val ibPaymentMode: ImageButton = binding.ibPaymentMode
+        val cardLayout: LinearLayout = binding.linearLayout
+        val ibPaymentMode: ImageView = binding.ibPaymentMode
+        val tvName: TextView = binding.tvName
     }
 
     interface onClickListner{

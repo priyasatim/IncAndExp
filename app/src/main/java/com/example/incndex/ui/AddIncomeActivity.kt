@@ -1,21 +1,17 @@
 package com.example.incndex.ui
 
-import android.app.Activity
-import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.incndex.R
+import com.example.incndex.data.Amount
 import com.example.incndex.data.Category
-import com.example.incndex.data.Income
 import com.example.incndex.data.PaymentResponse
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
@@ -23,18 +19,15 @@ import com.example.incndex.databinding.ActivityAddIncomeBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+
 public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     private lateinit var binding: ActivityAddIncomeBinding
     lateinit var userDao : UserDao
     var arrayList = ArrayList<String>()
-    private lateinit var adapter: IncomeAdapter
     private lateinit var paymentAdapter : PaymentAdapter
     var listOfPayment : ArrayList<PaymentResponse> = arrayListOf()
-    lateinit var paymentMode : String
+    var paymentMode : String = ""
+    var listOfIncome : ArrayList<Amount> = arrayListOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,10 +38,10 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         paymentAdapter = PaymentAdapter(this,this)
         binding.rcPaymentType.adapter = paymentAdapter
 
-        listOfPayment.add(PaymentResponse("Earn",R.drawable.money,false))
-        listOfPayment.add(PaymentResponse("Business",R.drawable.money,false))
-        listOfPayment.add(PaymentResponse("Trade",R.drawable.money,false))
-        listOfPayment.add(PaymentResponse("Invest",R.drawable.money,false))
+        listOfPayment.add(PaymentResponse("Cash",R.drawable.money,false))
+        listOfPayment.add(PaymentResponse("Card",R.drawable.card,false))
+        listOfPayment.add(PaymentResponse("UPI",R.drawable.upi,false))
+        listOfPayment.add(PaymentResponse("Netbanking",R.drawable.netbanking,false))
 
         paymentAdapter.paymentList = listOfPayment
         paymentAdapter.notifyDataSetChanged()
@@ -61,6 +54,16 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
                 for (i in userDao.readCategory()) {
                     arrayList.add(i.name)
                 }
+            }
+
+            for (i in userDao.readAmount(null,null)) {
+                if(i.isIncome){
+                    listOfIncome.add(i)
+                }
+            }
+
+            if(listOfIncome.size > 0){
+                binding.ivList.visibility = View.VISIBLE
             }
         }
 
@@ -90,23 +93,19 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         binding.tvSubmit.setOnClickListener {
             if (validation()) {
                 CoroutineScope(Dispatchers.IO).launch {
-                    val sdf = SimpleDateFormat("dd/MM/yyyy")
-                    val currentDate = sdf.format(Date())
-
-                    val user = Income(
+                    if(listOfPayment.size > 0 && paymentMode.isNullOrEmpty()) paymentMode = listOfPayment[0].name
+                    val amount = Amount(
                         name = binding.etNote.text.trim().toString(),
                         category = binding.tvCategory.text.trim().toString(),
                         price = binding.etAmount.text.trim().toString().toDouble(),
-                        date = currentDate,
+                        date = System.currentTimeMillis(),
                         payment_mode = paymentMode,
-                        isSelect = false
+                        ref_id = 0,
+                        isIncome = true
                     )
-                    Log.d("paymentMode",""+paymentMode)
-
-                    arrayList.add(binding.tvCategory.text.trim().toString())
-
-                    userDao.addIncome(user)
+                    userDao.addAmount(amount)
                     userDao.addCategory(Category(name = binding.tvCategory.text.trim().toString()))
+                    arrayList.add(binding.tvCategory.text.trim().toString())
 
 
                     this@AddIncomeActivity.finish()

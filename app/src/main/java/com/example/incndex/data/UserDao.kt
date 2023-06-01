@@ -5,36 +5,31 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import java.util.Date
+import androidx.room.Update
+
 
 @Dao
 interface UserDao {
 
  @Insert(onConflict = OnConflictStrategy.IGNORE)
- fun addIncome(income : Income)
-
- @Query("SELECT * FROM income_table")
- fun readIncome() : List<Income>
-
- @Query("SELECT * FROM income_table")
- fun selectIncome() : List<Income>
-
- @Insert(onConflict = OnConflictStrategy.IGNORE)
- fun addExpenses(expenses : Expenses)
-
- @Query("SELECT * FROM expense_table")
- fun readExpenses() : List<Expenses>
+ fun addAmount(amount : Amount)
 
  @Insert(onConflict = OnConflictStrategy.IGNORE)
  fun addCategory(category : Category)
 
+ @Query("SELECT * FROM amount_table WHERE (:startDate IS NULL OR date >= :startDate) AND (:endDate IS NULL OR date <= :endDate)")
+ fun readAmount(startDate: Long?, endDate: Long?) : List<Amount>
+
  @Query("SELECT * FROM category")
  fun readCategory() : List<Category>
 
+@Delete
+fun deleteRefId(refIds: ArrayList<Amount>)
  @Delete
- fun deleteIncome(income: List<Income>)
+ fun deleteParent(parentId: Amount)
 
  @Delete
- fun deleteExpenses(expenses: List<Expenses>)
+ fun delete(ids: ArrayList<Amount>)
+
 
 }

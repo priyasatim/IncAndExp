@@ -9,9 +9,10 @@
         android:id="@+id/iv_list"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/credit"
+        android:src="@drawable/list"
+        android:padding="12dp"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/ll_amount"
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <LinearLayout

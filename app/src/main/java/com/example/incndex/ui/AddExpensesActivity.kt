@@ -1,7 +1,5 @@
 package com.example.incndex.ui
 
-import android.app.Activity
-import android.app.DatePickerDialog
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -10,12 +8,10 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
-import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.incndex.R
+import com.example.incndex.data.Amount
 import com.example.incndex.data.Category
-import com.example.incndex.data.Expenses
-import com.example.incndex.data.Income
 import com.example.incndex.data.PaymentResponse
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
@@ -23,28 +19,33 @@ import com.example.incndex.databinding.ActivityAddIncomeBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
 
 class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     private lateinit var binding: ActivityAddIncomeBinding
-    lateinit var paymentMode : String
+    var paymentMode : String = ""
     lateinit var userDao : UserDao
     var isComingFromList : Boolean = false
     var arrayList = ArrayList<String>()
+    var isRestore : Boolean = false
+    var isIncome : Boolean = false
+    var price : Double = 0.0
+    var id : Int = 0
     private lateinit var paymentAdapter : PaymentAdapter
     var listOfPayment : ArrayList<PaymentResponse> = arrayListOf()
+    var listOfExpenses : ArrayList<Amount> = arrayListOf()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAddIncomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        if(intent.getBooleanExtra("restore",false)){
+            isRestore = true
+            isIncome = intent.getBooleanExtra("isIncome",false)
+            id = intent.getIntExtra("id",0)
+            price = intent.getDoubleExtra("price",0.0)
+        }
 
         binding.ivAdd.setBackgroundResource(R.drawable.ic_minus);
 
@@ -54,8 +55,8 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
         binding.rcPaymentType.adapter = paymentAdapter
 
         listOfPayment.add(PaymentResponse("Cash",R.drawable.money,false))
-        listOfPayment.add(PaymentResponse("Card",R.drawable.credit,false))
-//        listOfPayment.add(PaymentResponse("UPI",R.drawable.))
+        listOfPayment.add(PaymentResponse("Card",R.drawable.card,false))
+       listOfPayment.add(PaymentResponse("UPI",R.drawable.upi,false))
         listOfPayment.add(PaymentResponse("Netbanking",R.drawable.netbanking,false))
 
         paymentAdapter.paymentList = listOfPayment
@@ -71,6 +72,18 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                 for (i in userDao.readCategory()) {
                     arrayList.add(i.name)
                 }
+            }
+
+            for (i in userDao.readAmount(null,null)) {
+                if(!i.isIncome){
+                    listOfExpenses.add(i)
+                }
+            }
+
+            if(isRestore)
+                binding.ivList.visibility = View.GONE
+            else if(listOfExpenses.size > 0 ){
+                binding.ivList.visibility = View.VISIBLE
             }
         }
 
@@ -109,25 +122,60 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
         binding.tvSubmit.setOnClickListener {
             if (validation()) {
                 CoroutineScope(Dispatchers.IO).launch {
-                    val sdf = SimpleDateFormat("dd/MM/yyyy")
-                    val currentDate = sdf.format(Date())
+                    if(listOfPayment.size > 0 && paymentMode.isNullOrEmpty()) paymentMode = listOfPayment[0].name
 
-                    val user = Expenses(
-                        name = binding.etNote.text.trim().toString(),
-                        category = binding.tvCategory.text.trim().toString(),
-                        price = binding.etAmount.text.trim().toString().toDouble(),
-                        date = currentDate,
-                        payment_mode = paymentMode
-                    )
-                    arrayList.add(binding.tvCategory.text.trim().toString())
-                    userDao.addCategory(Category(name = binding.tvCategory.text.trim().toString()))
-                    userDao.addExpenses(user)
+                    var restoreId = 0
+                    if(isRestore) restoreId = id
+                    if(!isIncome && isRestore)
+                    {
+                        val amount = Amount(
+                            name = binding.etNote.text.trim().toString(),
+                            category = binding.tvCategory.text.trim().toString(),
+                            price = binding.etAmount.text.trim().toString().toDouble(),
+                            date = System.currentTimeMillis(),
+                            payment_mode = paymentMode,
+                            ref_id = restoreId,
+                            isIncome = true
+                        )
+                        userDao.addAmount(amount)
 
-                    this@AddExpensesActivity.finish()
-                    var intent =
-                        Intent(this@AddExpensesActivity, ListOfExpensesActivity::class.java)
-                    startActivity(intent)
+                        arrayList.add(binding.tvCategory.text.trim().toString())
+                        userDao.addCategory(Category(name = binding.tvCategory.text.trim().toString()))
 
+                        this@AddExpensesActivity.finish()
+                        var intent =
+                            Intent(this@AddExpensesActivity, DashboardActivity::class.java)
+                        startActivity(intent)
+
+
+                    } else {
+                        val amount = Amount(
+                            name = binding.etNote.text.trim().toString(),
+                            category = binding.tvCategory.text.trim().toString(),
+                            price = binding.etAmount.text.trim().toString().toDouble(),
+                            date = System.currentTimeMillis(),
+                            payment_mode = paymentMode,
+                            ref_id = restoreId,
+                            isIncome = false
+                        )
+                        userDao.addAmount(amount)
+
+                        arrayList.add(binding.tvCategory.text.trim().toString())
+                        userDao.addCategory(Category(name = binding.tvCategory.text.trim().toString()))
+
+                        this@AddExpensesActivity.finish()
+                        var intent =
+                            Intent(this@AddExpensesActivity, DashboardActivity::class.java)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                    }
+
+                    if(!isRestore){
+                        var intent =
+                            Intent(this@AddExpensesActivity, ListOfExpensesActivity::class.java)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                    }
 
                 }
             }
@@ -145,12 +193,26 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             }else if(binding.etAmount.text.trim().toString().isEmpty() || binding.etAmount.text.trim().toString() == "0.0"){
                 Toast.makeText(this,"Please Enter Amount",Toast.LENGTH_LONG).show()
                 return false
+            } else if(isRestore && isIncome && binding.etAmount.text.toString().toDouble() > price){
+                Toast.makeText(this,"Restore Amount should be less than price",Toast.LENGTH_LONG).show()
+                return false
             }
             return true
         }
 
     override fun onItemClick(position: Int) {
         paymentMode = listOfPayment[position].name
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        val parentActivityClass = DashboardActivity::class.java // Replace with the class of your parent activity
+
+        val intent = Intent(this, parentActivityClass)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        startActivity(intent)
+
+        finish()
     }
 
 }

@@ -13,12 +13,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.example.incndex.R
 import com.example.incndex.RoomDatabaseExporter
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
@@ -26,14 +28,21 @@ import com.example.incndex.databinding.ActivityDashboardBinding
 import com.google.android.material.datepicker.MaterialDatePicker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.FileReader
 import java.io.IOException
-import java.io.OutputStreamWriter
+import java.io.InputStream
+import java.net.URI
+import java.net.URISyntaxException
 import java.net.URL
+import java.net.URLDecoder
+import java.text.DecimalFormat
 import java.util.Calendar
 
 
@@ -50,9 +59,6 @@ class DashboardActivity : AppCompatActivity() {
     private val EXTERNAL_STORAGE_PERMISSION_CODE = 23
     lateinit var file: File
 
-    private var fromDateCalendar: Calendar = Calendar.getInstance()
-    private var toDateCalendar: Calendar = Calendar.getInstance()
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,26 +70,22 @@ class DashboardActivity : AppCompatActivity() {
 
 
         CoroutineScope(Dispatchers.IO).launch {
-            if (userDao.readIncome().isNotEmpty()) {
-                for (i in userDao.readIncome()) {
-                    totalIncome += i.price
+            if (userDao.readAmount(null,null).isNotEmpty()) {
+                for (i in userDao.readAmount(null,null)) {
+                    if(i.isIncome){
+                        totalIncome += i.price
+                    } else
+                        totalExpenses += i.price
                 }
-            }
 
-            if (userDao.readExpenses().isNotEmpty()) {
-                for (i in userDao.readExpenses()) {
-                    totalExpenses += i.price
-                }
                 binding.tvExpenses.text = totalExpenses.toString()
+
+                if (totalIncome > totalExpenses) {
+                    total = totalIncome - totalExpenses
+                    binding.tvIncome.text = total.toString()
+                } else
+                    binding.tvIncome.text = totalIncome.toString()
             }
-
-            if (totalIncome > totalExpenses) {
-                total = totalIncome - totalExpenses
-                binding.tvIncome.text = total.toString()
-            } else
-                binding.tvIncome.text = totalIncome.toString()
-
-
         }
 
         binding.tvIncome.setOnClickListener {
@@ -125,20 +127,25 @@ class DashboardActivity : AppCompatActivity() {
                 val datePicker = builder.build()
 
                 datePicker.addOnPositiveButtonClickListener { selection ->
-                    val startTimestamp = selection.first
-                    val endTimestamp = selection.second
+                    val calendarstart = Calendar.getInstance()
+                    calendarstart.timeInMillis = selection.first ?: 0
+                    calendarstart.set(Calendar.HOUR_OF_DAY, 0)
+                    calendarstart.set(Calendar.MINUTE, 0)
+                    calendarstart.set(Calendar.SECOND, 0)
+                    val startDateInMillis = calendarstart.timeInMillis
 
-                    val startDate = Calendar.getInstance()
-                    startDate.timeInMillis = startTimestamp
+                    val calendar = Calendar.getInstance()
 
-                    val endDate = Calendar.getInstance()
-                    endDate.timeInMillis = endTimestamp
+                    calendar.timeInMillis = selection.second ?: 0
+                    calendar.set(Calendar.HOUR_OF_DAY, 23)
+                    calendar.set(Calendar.MINUTE, 59)
+                    calendar.set(Calendar.SECOND, 59)
 
-                    fromDateCalendar = startDate
-                    toDateCalendar = endDate
+                    val endDateInMillis = calendar.timeInMillis
+
 
                     CoroutineScope(Dispatchers.IO).launch {
-                        requestExternalStoragePermission()
+                        requestExternalStoragePermission(startDateInMillis,endDateInMillis)
                     }
                     // Use the fromDate and toDate as needed
                 }
@@ -149,19 +156,21 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun requestExternalStoragePermission() {
+    private fun requestExternalStoragePermission(startDate : Long, endDate: Long) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
             == PackageManager.PERMISSION_GRANTED
         ) {
-            RoomDatabaseExporter.exportDatabaseToCsv(this@DashboardActivity,fromDateCalendar.timeInMillis,toDateCalendar.timeInMillis)?.let {
+            RoomDatabaseExporter.exportDatabaseToCsv(this@DashboardActivity,startDate,endDate)?.let {
                 file = it
+                val fileURL = try {
+                    file.toURI().toURL().toString()
+                } catch (e: URISyntaxException) {
+                    val decodedPath = URLDecoder.decode(file.path, "UTF-8")
+                    val uri = URI(decodedPath)
+                    uri.toURL().toString()
+                }
+                downloadAndOpenFile(this,"user.csv")
 
-                val sourceFilePath = it.absolutePath
-                val destinationFilePath = "${Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)}/priya.csv"
-
-                val fileName = "priya.csv"
-                showDownloadNotification(this,file,fileName)
-//                downloadFile(this, destinationFilePath, fileName)
             }
         } else {
             // Permission not granted, request it
@@ -173,14 +182,24 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    fun withSuffix(count: Double): String? {
-        if (count < 10) return "" + count
-        val exp = (Math.log(count.toDouble()) / Math.log(2.0)).toInt()
-        return String.format(
-            "%.1f %c",
-            count / Math.pow(2.0, exp.toDouble()),
-            "THkLCA"[exp - 1]
-        )
+    fun withSuffix(number: Double): String? {
+        var numberString = ""
+        val format = DecimalFormat("0.#")
+
+        numberString = if (Math.abs(number / 1000000) > 1) {
+            format.format((number / 1000000)).toString() + "M"
+        } else if (Math.abs(number / 100000) > 1) {
+            format.format((number / 100000)).toString() + "L"
+        }else if (Math.abs(number / 1000) > 1) {
+            format.format((number / 1000)).toString() + "K"
+        }else if (Math.abs(number / 100) > 1) {
+            format.format((number / 100)).toString() + "H"
+        }else if (Math.abs(number / 10) > 1) {
+            format.format((number / 10)).toString() + "T"
+        } else {
+            number.toString()
+        }
+        return numberString
     }
 
     override fun onRestart() {
@@ -190,16 +209,20 @@ class DashboardActivity : AppCompatActivity() {
             totalIncome = 0.0
             totalExpenses = 0.0
 
-            if (userDao.readIncome().isNotEmpty()) {
-                for (i in userDao.readIncome()) {
-                    totalIncome += i.price
+            if (userDao.readAmount(null,null).isNotEmpty()) {
+                for (i in userDao.readAmount(null,null)) {
+                    if(i.isIncome){
+                        totalIncome += i.price
+                    } else
+                        totalExpenses += i.price
                 }
-            }
+                binding.tvExpenses.text = totalExpenses.toString()
 
-            if (userDao.readExpenses().isNotEmpty()) {
-                for (i in userDao.readExpenses()) {
-                    totalExpenses += i.price
-                }
+                if (totalIncome > totalExpenses) {
+                    total = totalIncome - totalExpenses
+                    binding.tvIncome.text = total.toString()
+                } else
+                    binding.tvIncome.text = totalIncome.toString()
             }
 
             withContext(Dispatchers.Main) {
@@ -231,83 +254,15 @@ class DashboardActivity : AppCompatActivity() {
             }
         }
     }
-    fun copyFile(context: Context, sourcePath: String, destinationPath: String): Boolean {
-        return try {
-            val sourceFile = File(sourcePath)
-            val destinationFile = File(destinationPath)
 
-            val sourceStream = FileInputStream(sourceFile)
-            val destinationStream = FileOutputStream(destinationFile)
+    fun downloadAndOpenFile(context: Context,  fileName: String) {
+        createNotificationChannel(context)
 
-            val buffer = ByteArray(1024)
-            var bytesRead = sourceStream.read(buffer)
-            while (bytesRead != -1) {
-                destinationStream.write(buffer, 0, bytesRead)
-                bytesRead = sourceStream.read(buffer)
-            }
-
-            destinationStream.flush()
-            destinationStream.close()
-            sourceStream.close()
-
-            true
-        } catch (e: IOException) {
-            e.printStackTrace()
-            false
-        }
-    }
-
-    fun downloadFile(context: Context, filePath: String, fileName: String) {
-        val fileUri = Uri.fromFile(File(filePath))
-
-        val request = DownloadManager.Request(fileUri)
-            .setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
-            .setAllowedOverRoaming(false)
-            .setTitle(fileName)
-            .setDescription("Downloading")
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-
-        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        downloadManager.enqueue(request)
-    }
-
-    fun showDownloadNotification(context: Context, file: File, fileName: String) {
-        val channelId = "download_channel"
-        val notificationId = 123
-
-        // Create a notification channel for Android Oreo and above
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelName = "Download"
-            val channelDescription = "File Download Notification"
-            val importance = NotificationManager.IMPORTANCE_DEFAULT
-
-            val channel = NotificationChannel(channelId, channelName, importance).apply {
-                description = channelDescription
-                enableLights(true)
-                lightColor = Color.BLUE
-            }
-
-            val notificationManager: NotificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        // Create an intent to open the downloaded file
-        val intent = Intent(Intent.ACTION_VIEW)
-        val fileUri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
-        intent.setDataAndType(fileUri, "text/csv")
-        intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-//
-        val pendingIntent = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-
-        // Build the notification
-        val notificationBuilder = NotificationCompat.Builder(context, channelId)
-            .setContentTitle("Downloading $fileName")
-            .setContentText("Download in progress")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
+        val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setContentTitle("Download in progress")
+            .setContentText(fileName)
+            .setSmallIcon(R.drawable.border_box)
+            .setProgress(0, 0, true)
 
         val notificationManager = NotificationManagerCompat.from(context)
         if (ActivityCompat.checkSelfPermission(
@@ -324,7 +279,109 @@ class DashboardActivity : AppCompatActivity() {
             // for ActivityCompat#requestPermissions for more details.
             return
         }
-        notificationManager.notify(notificationId, notificationBuilder.build())
+        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
+
+        GlobalScope.launch(Dispatchers.IO) {
+
+            withContext(Dispatchers.Main) {
+                notificationManager.cancel(NOTIFICATION_ID)
+
+                if (file != null) {
+                    openDownloadedFile(context, file.path)
+                } else {
+                    // Handle download failure
+                }
+            }
+        }
+    }
+    private fun createNotificationChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Download Channel",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val notificationManager = context.getSystemService(NotificationManager::class.java)
+            notificationManager?.createNotificationChannel(channel)
+        }
     }
 
-}
+    private fun openDownloadedFile(context: Context, filePath: String) {
+        val file = File(filePath)
+        val contentUri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+          FileProvider.getUriForFile(context, "your.package.name.fileprovider", file)
+
+        } else {
+            Uri.fromFile(file)
+        }
+        val intent = Intent(Intent.ACTION_VIEW)
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent.setDataAndType(contentUri, "text/csv")
+
+        var pendingIntent: PendingIntent? = null
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            pendingIntent = PendingIntent.getActivity(this, 0,intent, PendingIntent.FLAG_IMMUTABLE)
+
+        } else {
+            pendingIntent = PendingIntent.getActivity(
+                context,
+                0,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
+        }
+
+
+
+        val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setContentTitle("Download Complete")
+            .setContentText(file.name)
+            .setContentIntent(pendingIntent)
+            .setSmallIcon(R.drawable.border_box)
+            .setAutoCancel(true)
+
+        val notificationManager = NotificationManagerCompat.from(context)
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+              return
+        }
+        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build())
+
+    }
+
+    fun openCSVFile(filePath: String): List<List<String>> {
+        val lines: MutableList<List<String>> = mutableListOf()
+
+        try {
+            val file = File(filePath)
+            val reader = BufferedReader(FileReader(file))
+
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                val data = line!!.split(",")
+                lines.add(data)
+            }
+
+            reader.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return lines
+    }
+
+    companion object{
+
+        private const val CHANNEL_ID = "DownloadChannel"
+        private const val NOTIFICATION_ID = 1
+    }
+
+
+
+
+    }

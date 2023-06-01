@@ -1,13 +1,8 @@
 package com.example.incndex
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import androidx.core.content.ContextCompat.startActivity
+import android.os.Environment
 import androidx.room.Room
-import com.example.incndex.data.Amount
-import com.example.incndex.data.Income
-import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
 import com.opencsv.CSVReader
 import java.io.File
@@ -15,6 +10,8 @@ import java.io.FileOutputStream
 import java.io.FileReader
 import java.io.IOException
 import java.io.OutputStreamWriter
+import java.text.SimpleDateFormat
+import java.util.Date
 
 
 public class RoomDatabaseExporter {
@@ -26,12 +23,10 @@ public class RoomDatabaseExporter {
 
             try {
                 // Retrieve data from Room database
-                val dataList = db.userDao().selectIncome()
-
-
+                val dataList = db.userDao().readAmount(fromDate,toDate)
 
                 // Create a file in the application's private directory
-                file = File(context.filesDir, "priya.csv")
+                file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "user.csv")
                 val outputStream = FileOutputStream(file)
                 val writer = OutputStreamWriter(outputStream)
 
@@ -42,7 +37,13 @@ public class RoomDatabaseExporter {
 
                 // Write data rows to CSV file
                 for (data in dataList) {
-                    val rowData = "${data.id},${data.date},${data.name},${1},${data.price},${data.price}" // Replace with your actual column values
+                    var rowData : String = ""
+
+                    if(data.isIncome){
+                         rowData = "${data.id},${convertLongToTime(data.date)},${data.name},${data.ref_id},${data.price}" // Replace with your actual column values
+                    } else
+                        rowData = "${data.id},${convertLongToTime(data.date)},${data.name},${data.ref_id},${""},${data.price}" // Replace with your actual column values
+
                     writer.write(rowData)
                     writer.write("\n")
                 }
@@ -69,6 +70,12 @@ public class RoomDatabaseExporter {
                 db.close()
             }
             return file
+        }
+
+        fun convertLongToTime(time: Long): String {
+            val date = Date(time)
+            val format = SimpleDateFormat("dd/MM/yyyy")
+            return format.format(date)
         }
     }
 }

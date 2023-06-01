@@ -1,28 +1,28 @@
 package com.example.incndex.ui
 
-import android.annotation.SuppressLint
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
-import com.example.incndex.data.Income
+import com.example.incndex.data.Amount
 import com.example.incndex.databinding.ItemRecordBinding
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
     private lateinit var binding: ItemRecordBinding
 
-    private var itemList: List<Income> = emptyList()
-    var selectedList = ArrayList<Income>()
-    var filteredItemList: List<Income> = emptyList()
+    private var itemList: ArrayList<Amount> = ArrayList()
+
+    var selectedList = ArrayList<Amount>()
+    var filteredItemList: ArrayList<Amount> = ArrayList()
 
     inner class ViewHolder : RecyclerView.ViewHolder(binding.root) {
-        fun setData(item: Income) {
+        fun setData(item: Amount) {
             binding.apply {
                 tvTitle.text = item.name.toString()
                 tvCategory.text = item.category.toString()
-                tvDate.text = item.date.toString()
+                tvDate.text= convertLongToTime(item.date)
                 tvAmount.text = "₹ " + item.price.toString()
                 tvPayment.text = item.payment_mode.toString()
 
@@ -33,12 +33,12 @@ class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeA
                     }
                     else
                     {
-                   if(selectedList.isNotEmpty()){
+                   if(!selectedList.isNullOrEmpty()){
                        for(i in selectedList.withIndex()){
-                           Log.d("id_testing",""+item.id + i.value.id)
                            if(item.id == i.value.id) {
-                                   selectedList.remove(item)
-                                   listner.onDelete(selectedList)
+                               selectedList.remove(item)
+                               listner.onDelete(selectedList)
+                               break
 
                            }
                            }
@@ -46,6 +46,10 @@ class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeA
 
                    }
                 }
+                tvRestore.setOnClickListener {
+                    listner.onRestore(item)
+                }
+
             }
         }
 
@@ -68,24 +72,28 @@ class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeA
     }
 
     // Update item list and perform search using DiffUtil
-    fun updateItemList(newItemList: List<Income>, query: String) {
-        val diffCallback = ItemDiffCallback(itemList, newItemList)
+    fun updateItemList(newItemList: List<Amount>, query: String) {
+        val filteredList = if (query.isNotEmpty()) {
+            newItemList.filter { it.name.contains(query, ignoreCase = true) }
+        } else {
+            newItemList
+        }
+
+        val diffCallback = ItemDiffCallback(filteredItemList, filteredList)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
 
-        itemList = newItemList
-        filteredItemList = if (query.isNotEmpty()) {
-            itemList.filter { it.name.contains(query, ignoreCase = true) }
-        } else {
-            itemList
-        }
+        itemList.clear()
+        itemList.addAll(newItemList)
+        filteredItemList.clear()
+        filteredItemList.addAll(filteredList)
 
         diffResult.dispatchUpdatesTo(this)
     }
 
     // DiffUtil callback class
     private class ItemDiffCallback(
-        private val oldList: List<Income>,
-        private val newList: List<Income>
+        private val oldList: List<Amount>,
+        private val newList: List<Amount>
     ) : DiffUtil.Callback() {
 
         override fun getOldListSize(): Int {
@@ -105,6 +113,12 @@ class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeA
         }
     }
     interface onClickListner{
-        fun onDelete(income : List<Income>)
+        fun onDelete(income : List<Amount>)
+        fun onRestore(income : Amount)
+    }
+    fun convertLongToTime(time: Long): String {
+        val date = Date(time)
+        val format = SimpleDateFormat("dd/MM/yyyy")
+        return format.format(date)
     }
 }

@@ -1,39 +1,32 @@
 package com.example.incndex.ui
 
-import android.app.Activity
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.room.Room
-import com.example.incndex.R
-import com.example.incndex.data.Expenses
+import com.example.incndex.data.Amount
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
 import com.example.incndex.databinding.ActivityListOfExpensesBinding
-import com.example.incndex.databinding.ActivityListOfIncomeBinding
-import com.google.android.material.datepicker.MaterialDatePicker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ListOfExpensesActivity : AppCompatActivity() {
+class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListner {
     private lateinit var adapter: ExpensesAdapter
     private lateinit var binding: ActivityListOfExpensesBinding
     lateinit var userDao : UserDao
-    private var itemList: List<Expenses> = emptyList()
+    private var itemList: ArrayList<Amount> = ArrayList()
     private var alertDialog: AlertDialog? = null
-    var reversedList: List<Expenses> = emptyList()
+    var reversedList: ArrayList<Amount> = ArrayList()
+    var listParentId = ArrayList<Amount>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,21 +36,11 @@ class ListOfExpensesActivity : AppCompatActivity() {
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
 
         binding.recyclevieiw.layoutManager = LinearLayoutManager(this)
-        adapter = ExpensesAdapter()
+        adapter = ExpensesAdapter(this,userDao)
         binding.recyclevieiw.adapter = adapter
         binding.searchExpenses.onActionViewExpanded();
         binding.searchExpenses.clearFocus();
         binding.searchExpenses.queryHint = "Search"
-
-        binding.imageviewDate.setOnClickListener {
-            val datePicker = MaterialDatePicker.Builder.dateRangePicker().build()
-            datePicker.show(supportFragmentManager, "DatePicker")
-
-            datePicker.addOnPositiveButtonClickListener {
-
-                Toast.makeText(this, "${datePicker.headerText} is selected", Toast.LENGTH_LONG).show()
-            }
-        }
 
         adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onChanged() {
@@ -76,9 +59,9 @@ class ListOfExpensesActivity : AppCompatActivity() {
             }
 
             fun checkEmpty() {
-//                binding.ivNoDataFound.visibility = (if (adapter.itemCount == 0) View.VISIBLE else View.GONE)
-//                binding.ivDelete.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
-//                binding.recyclevieiw.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+                binding.ivNoDataFound.visibility = (if (adapter.itemCount == 0) View.VISIBLE else View.GONE)
+                binding.ivDelete.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+                binding.recyclevieiw.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
             }
         })
 
@@ -86,6 +69,8 @@ class ListOfExpensesActivity : AppCompatActivity() {
         binding.searchExpenses.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
                 adapter.updateItemList(reversedList, query)
+                adapter.notifyDataSetChanged()
+
                 binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
                 binding.recyclevieiw.visibility = (if (adapter.filteredItemList.isEmpty()) View.GONE else View.VISIBLE)
 
@@ -94,7 +79,9 @@ class ListOfExpensesActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String): Boolean {
                 adapter.updateItemList(reversedList, newText)
-                    binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
+                adapter.notifyDataSetChanged()
+
+                binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
                     binding.recyclevieiw.visibility = (if (adapter.filteredItemList.isEmpty()) View.GONE else View.VISIBLE)
 
                 return true
@@ -102,9 +89,13 @@ class ListOfExpensesActivity : AppCompatActivity() {
         })
 
         CoroutineScope(Dispatchers.IO).launch {
-
-            itemList = userDao.readExpenses()
-            reversedList = itemList.reversed()
+            for(i in userDao.readAmount(null,null))
+            {
+                if(!i.isIncome){
+                    itemList.add(i)
+                }
+            }
+            reversedList.addAll(itemList.reversed())
             withContext(Dispatchers.Main) {
                 adapter.updateItemList(reversedList, "")
             }
@@ -113,28 +104,45 @@ class ListOfExpensesActivity : AppCompatActivity() {
 
 
         binding.ivDelete.setOnClickListener {
-            showConfirmationDialog()
+            if(listParentId.size == 0){
+                Toast.makeText(this,"Please select item",Toast.LENGTH_LONG).show()
+            } else
+                showConfirmationDialog()
         }
     }
 
     private fun showConfirmationDialog() {
         val builder = AlertDialog.Builder(this)
         builder?.setTitle("Confirmation")
-        builder?.setMessage("Are you sure you want to delete all records?")
+        builder?.setMessage("Are you sure you want to delete this records?")
 
         // Set positive button and its click listener
         builder.setPositiveButton("Yes") { dialog: DialogInterface, which: Int ->
-            // User clicked "Yes", perform the desired action
-            CoroutineScope(Dispatchers.IO).launch {
-                val expenses = userDao.readExpenses()
-                reversedList = expenses.reversed()
-                userDao.deleteExpenses(reversedList)
-                withContext(Dispatchers.Main) {
-                    adapter.updateItemList(reversedList, "")
-                }
-                alertDialog?.dismiss()
-            }
+            var childRefId = ArrayList<Amount>()
 
+            CoroutineScope(Dispatchers.IO).launch {
+                for(k in listParentId) {
+                    for (i in userDao.readAmount(null, null)) {
+                        if (k.id == i.ref_id) {
+                            childRefId.add(i)
+                            userDao.deleteRefId(childRefId)
+                            userDao.deleteParent(k)
+
+                        }
+                    }
+                }
+
+                if(childRefId.size == 0) {
+                    userDao.delete(listParentId)
+                }
+
+                this@ListOfExpensesActivity.finish()
+                var intent = Intent(this@ListOfExpensesActivity, DashboardActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                intent.removeFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                startActivity(intent)
+
+            }
         }
 
         // Set negative button and its click listener
@@ -146,5 +154,19 @@ class ListOfExpensesActivity : AppCompatActivity() {
 
         alertDialog = builder.create()
         alertDialog?.show()
+    }
+    override fun onDelete(list: List<Amount>) {
+        listParentId.clear()
+        listParentId.addAll(list)
+    }
+
+    override fun onRestore(amount: Amount) {
+        this.finish()
+        var intent = Intent(this, AddExpensesActivity::class.java)
+        intent.putExtra("id",amount.id)
+        intent.putExtra("price",amount.price)
+        intent.putExtra("restore",true)
+        intent.putExtra("isIncome",false)
+        startActivity(intent)
     }
 }

@@ -1,41 +1,33 @@
 package com.example.incndex.ui
 
-import android.app.Activity
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.incndex.data.Income
+import com.example.incndex.data.Amount
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
 import com.example.incndex.databinding.ActivityListOfIncomeBinding
-import com.google.android.material.datepicker.MaterialDatePicker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.TimeZone
-
 
 class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
     private lateinit var adapter: IncomeAdapter
     private lateinit var binding: ActivityListOfIncomeBinding
     lateinit var userDao : UserDao
-    private var itemList: List<Income> = emptyList()
+    private var itemList: ArrayList<Amount> = ArrayList()
     private var alertDialog: AlertDialog? = null
-    var reversedList: ArrayList<Income> = ArrayList()
-    var selectedList = ArrayList<Income>()
+    var reversedList: ArrayList<Amount> = ArrayList()
+    var listParentId = ArrayList<Amount>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,29 +40,24 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
         adapter = IncomeAdapter(this)
         binding.recyclevieiw.adapter = adapter
 
+
         CoroutineScope(Dispatchers.IO).launch {
-            itemList = userDao.readIncome()
+            for(i in userDao.readAmount(null,null))
+            {
+                if(i.isIncome){
+                    itemList.add(i)
+                }
+            }
             reversedList.addAll(itemList.reversed())
 
             withContext(Dispatchers.Main) {
-                adapter.updateItemList(reversedList, "")
+                    adapter.updateItemList(reversedList, "")
             }
         }
 
         binding.searchIncome.onActionViewExpanded();
         binding.searchIncome.clearFocus();
         binding.searchIncome.queryHint = "Search"
-
-        binding.imageviewDate.setOnClickListener {
-                val datePicker = MaterialDatePicker.Builder.dateRangePicker().build()
-                datePicker.show(supportFragmentManager, "DatePicker")
-
-                datePicker.addOnPositiveButtonClickListener {
-
-                    Toast.makeText(this, "${datePicker.headerText} is selected", Toast.LENGTH_LONG).show()
-                }
-
-        }
 
         adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onChanged() {
@@ -96,16 +83,28 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
         })
         binding.searchIncome.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                return false
+                adapter.updateItemList(reversedList, query)
+                adapter.notifyDataSetChanged()
+                binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
+                binding.recyclevieiw.visibility = (if (adapter.filteredItemList.isEmpty()) View.GONE else View.VISIBLE)
+
+                return true
             }
 
             override fun onQueryTextChange(newText: String): Boolean {
                 adapter.updateItemList(reversedList, newText)
+                adapter.notifyDataSetChanged()
+                binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
+                binding.recyclevieiw.visibility = (if (adapter.filteredItemList.isEmpty()) View.GONE else View.VISIBLE)
+
                 return true
             }
         })
 
         binding.ivDelete.setOnClickListener {
+            if(listParentId.isEmpty()){
+                Toast.makeText(this,"Please select item",Toast.LENGTH_LONG).show()
+            } else
             showConfirmationDialog()
         }
     }
@@ -113,25 +112,37 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
     private fun showConfirmationDialog() {
         val builder = AlertDialog.Builder(this)
         builder?.setTitle("Confirmation")
-        builder?.setMessage("Are you sure you want to delete all records?")
+        builder?.setMessage("Are you sure you want to delete this records?")
 
         // Set positive button and its click listener
         builder.setPositiveButton("Yes") { dialog: DialogInterface, which: Int ->
-            // User clicked "Yes", perform the desired action
-            CoroutineScope(Dispatchers.IO).launch {
-                    userDao.deleteIncome(selectedList)
-                val updatedList = userDao.readIncome()
 
-                // Update the UI on the main thread
-                withContext(Dispatchers.Main) {
-                    // Update the adapter's data set
-                    adapter.filteredItemList = updatedList
-                    adapter.notifyDataSetChanged()
+                var childRefId = ArrayList<Amount>()
+
+                CoroutineScope(Dispatchers.IO).launch {
+                    for(k in listParentId) {
+                        for (i in userDao.readAmount(null, null)) {
+                            if (k.id == i.ref_id) {
+                                childRefId.add(i)
+                                userDao.deleteRefId(childRefId)
+                                userDao.deleteParent(k)
+
+                            }
+                        }
+                    }
+                    if(childRefId.size == 0) {
+                        userDao.delete(listParentId)
+                    }
+
+                    this@ListOfIncomeActivity.finish()
+                    var intent = Intent(this@ListOfIncomeActivity, DashboardActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                    intent.removeFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    startActivity(intent)
                 }
                 alertDialog?.dismiss()
             }
 
-        }
 
         // Set negative button and its click listener
         builder.setNegativeButton("No") { dialog: DialogInterface, which: Int ->
@@ -144,10 +155,19 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
         alertDialog?.show()
     }
 
-    override fun onDelete(list: List<Income>) {
-        selectedList.clear()
-        selectedList.addAll(list)
+    override fun onDelete(list: List<Amount>) {
+        listParentId.clear()
+        listParentId.addAll(list)
+    }
 
-        }
+    override fun onRestore(income: Amount) {
+        var intent = Intent(this, AddExpensesActivity::class.java)
+        intent.putExtra("id",income.id)
+        intent.putExtra("price",income.price)
+        intent.putExtra("restore",true)
+        intent.putExtra("isIncome",true)
+        Log.d("ListOfIncomeActivity",""+income.id + " "+ income.price)
+        startActivity(intent)
+    }
 
 }
