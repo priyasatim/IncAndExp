@@ -24,9 +24,12 @@ public class RoomDatabaseExporter {
             try {
                 // Retrieve data from Room database
                 val dataList = db.userDao().readAmount(fromDate,toDate)
+                val timeStamp = SimpleDateFormat("yyyyMMddHHmmss").format(Date())
 
                 // Create a file in the application's private directory
-                file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "user.csv")
+                file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    "$timeStamp.csv"
+                )
                 val outputStream = FileOutputStream(file)
                 val writer = OutputStreamWriter(outputStream)
 

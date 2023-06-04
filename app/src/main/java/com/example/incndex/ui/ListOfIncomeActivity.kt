@@ -124,23 +124,30 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
                         for (i in userDao.readAmount(null, null)) {
                             if (k.id == i.ref_id) {
                                 childRefId.add(i)
-                                userDao.deleteRefId(childRefId)
-                                userDao.deleteParent(k)
-
                             }
                         }
                     }
-                    if(childRefId.size == 0) {
-                        userDao.delete(listParentId)
-                    }
+                            if (childRefId.size == 0) {
+                                userDao.delete(listParentId)
 
-                    this@ListOfIncomeActivity.finish()
-                    var intent = Intent(this@ListOfIncomeActivity, DashboardActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-                    intent.removeFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    startActivity(intent)
+                            }else {
+                                userDao.deleteRefId(childRefId)
+                                userDao.delete(listParentId)
+                            }
+
                 }
-                alertDialog?.dismiss()
+
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(this@ListOfIncomeActivity,"Data Deleted Successfully",Toast.LENGTH_LONG).show()
+
+                this@ListOfIncomeActivity.finish()
+                var intent = Intent(this@ListOfIncomeActivity, DashboardActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                intent.removeFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                startActivity(intent)
+            }
+
+            alertDialog?.dismiss()
             }
 
 
@@ -155,9 +162,23 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
         alertDialog?.show()
     }
 
-    override fun onDelete(list: List<Amount>) {
-        listParentId.clear()
-        listParentId.addAll(list)
+    override fun onDelete(item : Amount,isChecked : Boolean) {
+        if(isChecked){
+            listParentId.add(item)
+        }
+        else
+        {
+            if(!listParentId.isNullOrEmpty()){
+                for(i in listParentId.withIndex()){
+                    if(item.id == i.value.id) {
+                        listParentId.remove(item)
+                        break
+
+                    }
+                }
+            }
+
+        }
     }
 
     override fun onRestore(income: Amount) {

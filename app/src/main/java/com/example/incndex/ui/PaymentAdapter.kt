@@ -18,7 +18,7 @@ import com.example.incndex.databinding.ItemPaymentBinding
 class PaymentAdapter(var mcontext: Context, var listner: onClickListner) : RecyclerView.Adapter<PaymentAdapter.ViewHolder>() {
     private lateinit var binding: ItemPaymentBinding
     var paymentList: List<PaymentResponse> = emptyList()
-    private var selectedItemPosition: Int = 0
+    private var selectedItemPosition: Int = 2
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         binding = ItemPaymentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -28,7 +28,7 @@ class PaymentAdapter(var mcontext: Context, var listner: onClickListner) : Recyc
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
 
         holder.tvName.setText(paymentList.get(position).name)
-            holder.ibPaymentMode.setOnClickListener {
+            holder.cardLayout.setOnClickListener {
                 listner.onItemClick(position)
                 selectedItemPosition = position
                 notifyDataSetChanged()

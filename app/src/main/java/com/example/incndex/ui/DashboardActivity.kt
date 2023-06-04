@@ -43,8 +43,9 @@ import java.net.URISyntaxException
 import java.net.URL
 import java.net.URLDecoder
 import java.text.DecimalFormat
+import java.text.SimpleDateFormat
 import java.util.Calendar
-
+import java.util.Date
 
 class DashboardActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDashboardBinding
@@ -88,12 +89,12 @@ class DashboardActivity : AppCompatActivity() {
             }
         }
 
-        binding.tvIncome.setOnClickListener {
+        binding.llIncome.setOnClickListener {
             var intent = Intent(this, AddIncomeActivity::class.java)
             startActivity(intent)
         }
 
-        binding.tvExpenses.setOnClickListener {
+        binding.llExpenses.setOnClickListener {
             var intent = Intent(this, AddExpensesActivity::class.java)
             startActivity(intent)
         }
@@ -124,6 +125,7 @@ class DashboardActivity : AppCompatActivity() {
             CoroutineScope(Dispatchers.IO).launch {
 
                 val builder = MaterialDatePicker.Builder.dateRangePicker()
+                builder.setTheme(R.style.MyDatePickerDialogTheme)
                 val datePicker = builder.build()
 
                 datePicker.addOnPositiveButtonClickListener { selection ->
@@ -169,7 +171,8 @@ class DashboardActivity : AppCompatActivity() {
                     val uri = URI(decodedPath)
                     uri.toURL().toString()
                 }
-                downloadAndOpenFile(this,"user.csv")
+                val timeStamp = SimpleDateFormat("yyyyMMddHHmmss").format(Date())
+                downloadAndOpenFile(this,timeStamp + ".csv")
 
             }
         } else {
@@ -261,7 +264,7 @@ class DashboardActivity : AppCompatActivity() {
         val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Download in progress")
             .setContentText(fileName)
-            .setSmallIcon(R.drawable.border_box)
+            .setSmallIcon(R.drawable.jt)
             .setProgress(0, 0, true)
 
         val notificationManager = NotificationManagerCompat.from(context)
@@ -339,7 +342,7 @@ class DashboardActivity : AppCompatActivity() {
             .setContentTitle("Download Complete")
             .setContentText(file.name)
             .setContentIntent(pendingIntent)
-            .setSmallIcon(R.drawable.border_box)
+            .setSmallIcon(R.drawable.jt)
             .setAutoCancel(true)
 
         val notificationManager = NotificationManagerCompat.from(context)

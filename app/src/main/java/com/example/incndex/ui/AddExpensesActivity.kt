@@ -45,6 +45,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             isIncome = intent.getBooleanExtra("isIncome",false)
             id = intent.getIntExtra("id",0)
             price = intent.getDoubleExtra("price",0.0)
+            if(isIncome) binding.etAmount.setText(price.toString())
         }
 
         binding.ivAdd.setBackgroundResource(R.drawable.ic_minus);
@@ -54,10 +55,11 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
         paymentAdapter = PaymentAdapter(this,this)
         binding.rcPaymentType.adapter = paymentAdapter
 
-        listOfPayment.add(PaymentResponse("Cash",R.drawable.money,false))
         listOfPayment.add(PaymentResponse("Card",R.drawable.card,false))
-       listOfPayment.add(PaymentResponse("UPI",R.drawable.upi,false))
-        listOfPayment.add(PaymentResponse("Netbanking",R.drawable.netbanking,false))
+        listOfPayment.add(PaymentResponse("Net banking",R.drawable.netbanking,false))
+        listOfPayment.add(PaymentResponse("Cash",R.drawable.money,true))
+        listOfPayment.add(PaymentResponse("UPI",R.drawable.upi,false))
+
 
         paymentAdapter.paymentList = listOfPayment
         paymentAdapter.notifyDataSetChanged()
@@ -170,13 +172,6 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                         startActivity(intent)
                     }
 
-                    if(!isRestore){
-                        var intent =
-                            Intent(this@AddExpensesActivity, ListOfExpensesActivity::class.java)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        startActivity(intent)
-                    }
-
                 }
             }
         }
@@ -194,7 +189,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                 Toast.makeText(this,"Please Enter Amount",Toast.LENGTH_LONG).show()
                 return false
             } else if(isRestore && isIncome && binding.etAmount.text.toString().toDouble() > price){
-                Toast.makeText(this,"Restore Amount should be less than price",Toast.LENGTH_LONG).show()
+                Toast.makeText(this,"Restore Amount should be less than income price",Toast.LENGTH_LONG).show()
                 return false
             }
             return true

@@ -1,8 +1,10 @@
 package com.example.incndex.ui
 
+import android.R.attr.duration
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -14,10 +16,12 @@ import com.example.incndex.data.Amount
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
 import com.example.incndex.databinding.ActivityListOfExpensesBinding
+import com.google.android.material.color.utilities.Score.score
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 
 class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListner {
     private lateinit var adapter: ExpensesAdapter
@@ -121,20 +125,29 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
             var childRefId = ArrayList<Amount>()
 
             CoroutineScope(Dispatchers.IO).launch {
-                for(k in listParentId) {
+                for (k in listParentId) {
                     for (i in userDao.readAmount(null, null)) {
                         if (k.id == i.ref_id) {
                             childRefId.add(i)
-                            userDao.deleteRefId(childRefId)
-                            userDao.deleteParent(k)
-
                         }
                     }
                 }
+                if (childRefId.size == 0) {
+                    userDao.delete(listParentId)
 
-                if(childRefId.size == 0) {
+                } else {
+                    userDao.deleteRefId(childRefId)
                     userDao.delete(listParentId)
                 }
+
+            }
+
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(
+                    this@ListOfExpensesActivity,
+                    "Data Deleted Successfully",
+                    Toast.LENGTH_SHORT
+                ).show()
 
                 this@ListOfExpensesActivity.finish()
                 var intent = Intent(this@ListOfExpensesActivity, DashboardActivity::class.java)
@@ -143,6 +156,7 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
                 startActivity(intent)
 
             }
+
         }
 
         // Set negative button and its click listener
@@ -155,9 +169,25 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
         alertDialog = builder.create()
         alertDialog?.show()
     }
-    override fun onDelete(list: List<Amount>) {
-        listParentId.clear()
-        listParentId.addAll(list)
+    override fun onDelete(item: Amount,isChecked : Boolean) {
+        if(isChecked){
+            listParentId.add(item)
+        }
+        else
+        {
+            if(listParentId.isNotEmpty()){
+                for(i in listParentId.withIndex()){
+                    if(item.id == i.value.id) {
+                        listParentId.remove(item)
+                        break
+
+                    }
+                }
+            }
+
+        }
+
+//        listParentId.addAll(list)
     }
 
     override fun onRestore(amount: Amount) {

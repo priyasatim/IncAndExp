@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.example.incndex.R
 import com.example.incndex.data.Amount
 import com.example.incndex.databinding.ItemRecordBinding
 import java.text.SimpleDateFormat
@@ -24,27 +25,22 @@ class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeA
                 tvCategory.text = item.category.toString()
                 tvDate.text= convertLongToTime(item.date)
                 tvAmount.text = "₹ " + item.price.toString()
-                tvPayment.text = item.payment_mode.toString()
-
-                chRecord.setOnCheckedChangeListener { _, isChecked ->
-                    if(isChecked){
-                            selectedList.add(item)
-                            listner.onDelete(selectedList)
+                when(item.payment_mode){
+                    "Card" -> {
+                        ivPayment.setImageResource(R.drawable.card)
                     }
-                    else
-                    {
-                   if(!selectedList.isNullOrEmpty()){
-                       for(i in selectedList.withIndex()){
-                           if(item.id == i.value.id) {
-                               selectedList.remove(item)
-                               listner.onDelete(selectedList)
-                               break
-
-                           }
-                           }
-                       }
-
-                   }
+                    "Net banking" -> {
+                        ivPayment.setImageResource(R.drawable.netbanking)
+                    }
+                    "Cash" -> {
+                        ivPayment.setImageResource(R.drawable.money)
+                    }
+                    "UPI" -> {
+                        ivPayment.setImageResource(R.drawable.upi)
+                    }
+                }
+                chRecord.setOnCheckedChangeListener { _, isChecked ->
+                    listner.onDelete(item,isChecked)
                 }
                 tvRestore.setOnClickListener {
                     listner.onRestore(item)
@@ -113,7 +109,7 @@ class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeA
         }
     }
     interface onClickListner{
-        fun onDelete(income : List<Amount>)
+        fun onDelete(income : Amount, isCheck : Boolean)
         fun onRestore(income : Amount)
     }
     fun convertLongToTime(time: Long): String {

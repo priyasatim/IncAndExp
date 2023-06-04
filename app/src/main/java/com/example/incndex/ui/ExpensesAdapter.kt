@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.example.incndex.R
 import com.example.incndex.data.Amount
 import com.example.incndex.data.UserDao
 import com.example.incndex.databinding.ItemRecordBinding
@@ -28,37 +29,24 @@ class ExpensesAdapter(var listner : onClickListner, var userDao: UserDao)  : Rec
                 tvCategory.text=item.category.toString()
                 tvDate.text= convertLongToTime(item.date)
                 tvAmount.text="₹ " +item.price.toString()
-                tvPayment.text=item.payment_mode.toString()
+                when(item.payment_mode){
+                    "Card" -> {
+                        ivPayment.setImageResource(R.drawable.card)
+                    }
+                    "Net banking" -> {
+                        ivPayment.setImageResource(R.drawable.netbanking)
+                    }
+                    "Cash" -> {
+                        ivPayment.setImageResource(R.drawable.money)
+                    }
+                    "UPI" -> {
+                        ivPayment.setImageResource(R.drawable.upi)
+                    }
+                }
+
 
                 chRecord.setOnCheckedChangeListener { _, isChecked ->
-                    if(isChecked){
-                        var list = ArrayList<Amount>()
-                        list.add(itemList.get(absoluteAdapterPosition))
-//
-//                        for(i in itemList){
-//                            list.add(i.ref_id)
-//                        }
-//                        selectedList.add(item)
-//                        CoroutineScope(Dispatchers.IO).launch {
-//                            userDao.deleteAmount(item.id, list)
-//                        }
-                        listner.onDelete(list)
-                    }
-                    else
-                    {
-                        if(selectedList.isNotEmpty()){
-                            for(i in selectedList.withIndex()){
-                                Log.d("id_testing",""+item.id + i.value.id)
-                                if(item.id == i.value.id) {
-                                    selectedList.remove(item)
-                                    listner.onDelete(selectedList)
-
-
-                                }
-                            }
-                        }
-
-                    }
+                    listner.onDelete(item,isChecked)
                 }
 
                 tvRestore.setOnClickListener {
@@ -128,7 +116,7 @@ class ExpensesAdapter(var listner : onClickListner, var userDao: UserDao)  : Rec
         }
     }
     interface onClickListner{
-        fun onDelete(amount : List<Amount>)
+        fun onDelete(amount : Amount, ischeck : Boolean)
         fun onRestore(amount : Amount)
 
     }

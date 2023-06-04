@@ -38,10 +38,11 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         paymentAdapter = PaymentAdapter(this,this)
         binding.rcPaymentType.adapter = paymentAdapter
 
-        listOfPayment.add(PaymentResponse("Cash",R.drawable.money,false))
         listOfPayment.add(PaymentResponse("Card",R.drawable.card,false))
+        listOfPayment.add(PaymentResponse("Net banking",R.drawable.netbanking,false))
+        listOfPayment.add(PaymentResponse("Cash",R.drawable.money,true))
         listOfPayment.add(PaymentResponse("UPI",R.drawable.upi,false))
-        listOfPayment.add(PaymentResponse("Netbanking",R.drawable.netbanking,false))
+
 
         paymentAdapter.paymentList = listOfPayment
         paymentAdapter.notifyDataSetChanged()
@@ -109,9 +110,6 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
 
 
                     this@AddIncomeActivity.finish()
-                    var intent =
-                        Intent(this@AddIncomeActivity, ListOfIncomeActivity::class.java)
-                    startActivity(intent)
 
                 }
             }

@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/recycle_grey">
+    android:orientation="vertical">
 
     <ImageView
         android:id="@+id/iv_list"
@@ -12,23 +13,18 @@
         android:src="@drawable/list"
         android:padding="12dp"
         android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        android:layout_gravity="end"
+        android:background="@color/white"
+        tools:visibility="visible"/>
 
     <LinearLayout
         android:id="@+id/ll_amount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:orientation="horizontal"
         android:gravity="center"
-        android:background="@drawable/curve_button_2"
-        android:backgroundTint="@color/white"
-        android:paddingVertical="12dp"
-        android:paddingHorizontal="46dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/guideline">
+        android:background="@color/white"
+        android:layout_weight="1">
 
         <ImageView
             android:id="@+id/iv_add"
@@ -44,99 +40,93 @@
             android:inputType="number" />
     </LinearLayout>
 
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintGuide_percent="0.25" />
+        android:orientation="vertical"
+        android:background="@color/white"
+        android:gravity="bottom">
 
     <TextView
-        android:id="@+id/tv_title_payment"
-        android:layout_width="0dp"
+        android:id="@+id/tv_note"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Payment Mode"
-        android:layout_marginTop="12dp"
-        android:textSize="14sp"
-        android:layout_marginHorizontal="12dp"
+        android:text="Note"
+        android:textColor="@color/extra_dark_grey"
+        android:layout_marginTop="16dp"
+        android:layout_marginHorizontal="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/guideline"/>
+        app:layout_constraintBottom_toTopOf="@+id/et_note"/>
+
+    <EditText
+        android:id="@+id/et_note"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:hint="Enter Note"
+        android:background="@color/extra_light_grey"
+        android:textSize="14sp"
+        android:textColor="@color/black"
+        android:paddingHorizontal="8dp"
+        android:layout_marginHorizontal="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/tv_title_category"/>
+
+    <TextView
+        android:id="@+id/tv_title_category"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Category"
+        android:layout_marginTop="16dp"
+        android:textColor="@color/extra_dark_grey"
+        android:textSize="14sp"
+        android:layout_marginHorizontal="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/tv_category"/>
+
+    <AutoCompleteTextView
+        android:id="@+id/tv_category"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:paddingVertical="12dp"
+        android:layout_marginTop="2dp"
+        android:paddingHorizontal="8dp"
+        android:background="@color/extra_light_grey"
+        android:textSize="14sp"
+        android:textColor="@color/black"
+        android:drawableStart="@drawable/ic_search"
+        android:drawableTint="@color/dark_grey"
+        android:drawablePadding="8dp"
+        android:hint="Category"
+        android:layout_marginHorizontal="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/rc_payment_type" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rc_payment_type"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_title_payment" />
-
-   <TextView
-       android:id="@+id/tv_title_category"
-       android:layout_width="0dp"
-       android:layout_height="wrap_content"
-       android:text="Category"
-       android:layout_marginTop="12dp"
-       android:textSize="14sp"
-       android:layout_marginHorizontal="12dp"
-       app:layout_constraintEnd_toEndOf="parent"
-       app:layout_constraintStart_toStartOf="parent"
-       app:layout_constraintTop_toBottomOf="@+id/rc_payment_type"/>
-
-    <AutoCompleteTextView
-        android:id="@+id/tv_category"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:paddingVertical="12dp"
-        android:layout_marginTop="2dp"
-        android:paddingHorizontal="8dp"
-        android:textSize="14sp"
-        android:drawableStart="@drawable/ic_search"
-        android:drawableTint="@color/dark_grey"
-        android:drawablePadding="8dp"
-        android:hint="Category"
-        android:layout_marginHorizontal="12dp"
-        android:background="@color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_title_category" />
-
-    <TextView
-        android:id="@+id/tv_note"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Note"
-        android:layout_marginTop="12dp"
-        android:layout_marginHorizontal="12dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_category"/>
-
-    <EditText
-        android:id="@+id/et_note"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:hint="Enter Note"
-        android:background="@color/white"
-        android:textSize="14sp"
-        android:paddingHorizontal="8dp"
-        android:layout_marginHorizontal="12dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_note"/>
+        app:layout_constraintBottom_toTopOf="@+id/tv_submit" />
 
     <TextView
         android:id="@+id/tv_submit"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/curve_button"
         android:gravity="center"
         android:padding="12dp"
         android:text="Submit"
-        android:backgroundTint="@color/purple_500"
-        android:layout_margin="24dp"
+        android:layout_margin="16dp"
+        android:textAllCaps="true"
+        android:background="@color/dark_black"
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
+</LinearLayout>
