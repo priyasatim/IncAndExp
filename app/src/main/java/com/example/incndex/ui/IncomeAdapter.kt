@@ -1,7 +1,11 @@
 package com.example.incndex.ui
 
+import android.content.Context
 import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.incndex.R
@@ -10,7 +14,7 @@ import com.example.incndex.databinding.ItemRecordBinding
 import java.text.SimpleDateFormat
 import java.util.Date
 
-class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
+class IncomeAdapter(var context: Context,var listner : onClickListner) : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
     private lateinit var binding: ItemRecordBinding
 
     private var itemList: ArrayList<Amount> = ArrayList()
@@ -23,28 +27,34 @@ class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeA
             binding.apply {
                 tvTitle.text = item.name.toString()
                 tvCategory.text = item.category.toString()
-                tvDate.text= convertLongToTime(item.date)
+                tvDate.text = convertLongToTime(item.date)
                 tvAmount.text = "₹ " + item.price.toString()
-                when(item.payment_mode){
+                tvAmount.setTextColor(ContextCompat.getColor(context, R.color.green));
+
+                when (item.payment_mode) {
                     "Card" -> {
                         ivPayment.setImageResource(R.drawable.card)
                     }
-                    "Net banking" -> {
+
+                    "Onlnine" -> {
                         ivPayment.setImageResource(R.drawable.netbanking)
                     }
+
                     "Cash" -> {
                         ivPayment.setImageResource(R.drawable.money)
                     }
+
                     "UPI" -> {
                         ivPayment.setImageResource(R.drawable.upi)
                     }
                 }
                 chRecord.setOnCheckedChangeListener { _, isChecked ->
-                    listner.onDelete(item,isChecked)
+                    listner.onDelete(item, isChecked)
                 }
                 tvRestore.setOnClickListener {
                     listner.onRestore(item)
                 }
+
 
             }
         }
@@ -111,6 +121,10 @@ class IncomeAdapter(var listner : onClickListner) : RecyclerView.Adapter<IncomeA
     interface onClickListner{
         fun onDelete(income : Amount, isCheck : Boolean)
         fun onRestore(income : Amount)
+    }
+    fun removeItem(position: Int) {
+        filteredItemList.removeAt(position)
+        notifyItemRemoved(position)
     }
     fun convertLongToTime(time: Long): String {
         val date = Date(time)

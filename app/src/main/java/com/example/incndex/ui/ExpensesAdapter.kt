@@ -1,8 +1,12 @@
 package com.example.incndex.ui
 
+import android.content.Context
+import android.graphics.Color
+import android.provider.Settings.Global.getString
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.incndex.R
@@ -15,7 +19,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 
-class ExpensesAdapter(var listner : onClickListner, var userDao: UserDao)  : RecyclerView.Adapter<ExpensesAdapter.ViewHolder>(){
+class ExpensesAdapter(var context : Context,var listner : onClickListner, var userDao: UserDao)  : RecyclerView.Adapter<ExpensesAdapter.ViewHolder>(){
     private lateinit var binding: ItemRecordBinding
 
     private var itemList: ArrayList<Amount> = ArrayList()
@@ -29,11 +33,13 @@ class ExpensesAdapter(var listner : onClickListner, var userDao: UserDao)  : Rec
                 tvCategory.text=item.category.toString()
                 tvDate.text= convertLongToTime(item.date)
                 tvAmount.text="₹ " +item.price.toString()
+                tvAmount.setTextColor(ContextCompat.getColor(context, R.color.red));
+
                 when(item.payment_mode){
                     "Card" -> {
                         ivPayment.setImageResource(R.drawable.card)
                     }
-                    "Net banking" -> {
+                    "Online" -> {
                         ivPayment.setImageResource(R.drawable.netbanking)
                     }
                     "Cash" -> {

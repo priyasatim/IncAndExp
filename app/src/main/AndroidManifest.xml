@@ -11,8 +11,6 @@
     <application
         android:usesCleartextTraffic="true"
         android:allowBackup="true"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="@xml/backup_rules"
         android:icon="@drawable/jt"
         android:label="@string/app_name"
         android:roundIcon="@drawable/jt"
@@ -52,7 +50,8 @@
         <activity
             android:name=".ui.AddIncomeActivity"
             android:exported="false"
-            android:screenOrientation="portrait"/>
+            android:screenOrientation="portrait"
+            />
         <activity
             android:name=".ui.SplashScreenActivity"
             android:exported="true"

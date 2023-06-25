@@ -40,7 +40,7 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
 
         binding.recyclevieiw.layoutManager = LinearLayoutManager(this)
-        adapter = ExpensesAdapter(this,userDao)
+        adapter = ExpensesAdapter(this,this,userDao)
         binding.recyclevieiw.adapter = adapter
         binding.searchExpenses.onActionViewExpanded();
         binding.searchExpenses.clearFocus();
@@ -66,6 +66,7 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
                 binding.ivNoDataFound.visibility = (if (adapter.itemCount == 0) View.VISIBLE else View.GONE)
                 binding.ivDelete.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
                 binding.recyclevieiw.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+                binding.searchExpenses.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
             }
         })
 
@@ -93,17 +94,24 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
         })
 
         CoroutineScope(Dispatchers.IO).launch {
-            for(i in userDao.readAmount(null,null))
-            {
-                if(!i.isIncome){
+            for (i in userDao.readAmount(null, null)) {
+                if (!i.isIncome) {
                     itemList.add(i)
                 }
             }
-            reversedList.addAll(itemList.reversed())
-            withContext(Dispatchers.Main) {
-                adapter.updateItemList(reversedList, "")
-            }
 
+            if(itemList.isEmpty()) {
+                binding.ivNoDataFound.visibility = (if (adapter.itemCount == 0) View.VISIBLE else View.GONE)
+                binding.ivDelete.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+                binding.recyclevieiw.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+                binding.searchExpenses.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+            } else {
+
+                reversedList.addAll(itemList.reversed())
+                withContext(Dispatchers.Main) {
+                    adapter.updateItemList(reversedList, "")
+                }
+            }
         }
 
 
@@ -186,8 +194,6 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
             }
 
         }
-
-//        listParentId.addAll(list)
     }
 
     override fun onRestore(amount: Amount) {

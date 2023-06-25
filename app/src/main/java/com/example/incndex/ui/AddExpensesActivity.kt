@@ -8,6 +8,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.incndex.R
 import com.example.incndex.data.Amount
@@ -19,6 +20,8 @@ import com.example.incndex.databinding.ActivityAddIncomeBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     private lateinit var binding: ActivityAddIncomeBinding
@@ -29,6 +32,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     var isRestore : Boolean = false
     var isIncome : Boolean = false
     var price : Double = 0.0
+    var incomeAmount : Double = 0.0
     var id : Int = 0
     private lateinit var paymentAdapter : PaymentAdapter
     var listOfPayment : ArrayList<PaymentResponse> = arrayListOf()
@@ -46,17 +50,27 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             id = intent.getIntExtra("id",0)
             price = intent.getDoubleExtra("price",0.0)
             if(isIncome) binding.etAmount.setText(price.toString())
+            if(isIncome)  binding.etNote.hint = "Expense Note" else binding.etNote.hint = "Saving Note"
+
+        } else {
+            incomeAmount = intent.getDoubleExtra("income_amount",0.0)
+            binding.etNote.hint = "Expense Note"
         }
 
+        if(isRestore && !isIncome)
+        binding.ivAdd.setBackgroundResource(R.drawable.ic_add);
+        else
         binding.ivAdd.setBackgroundResource(R.drawable.ic_minus);
 
         binding.rcPaymentType.layoutManager = LinearLayoutManager(this,
             LinearLayoutManager.HORIZONTAL,false)
         paymentAdapter = PaymentAdapter(this,this)
         binding.rcPaymentType.adapter = paymentAdapter
+        val layoutManager = GridLayoutManager(this, 4)
+        binding.rcPaymentType.setLayoutManager(layoutManager)
 
         listOfPayment.add(PaymentResponse("Card",R.drawable.card,false))
-        listOfPayment.add(PaymentResponse("Net banking",R.drawable.netbanking,false))
+        listOfPayment.add(PaymentResponse("Online",R.drawable.netbanking,false))
         listOfPayment.add(PaymentResponse("Cash",R.drawable.money,true))
         listOfPayment.add(PaymentResponse("UPI",R.drawable.upi,false))
 
@@ -84,9 +98,9 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
 
             if(isRestore)
                 binding.ivList.visibility = View.GONE
-            else if(listOfExpenses.size > 0 ){
-                binding.ivList.visibility = View.VISIBLE
-            }
+//            else if(listOfExpenses.size > 0 ){
+//                binding.ivList.visibility = View.VISIBLE
+//            }
         }
 
         binding.ivList.setOnClickListener {
@@ -124,7 +138,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
         binding.tvSubmit.setOnClickListener {
             if (validation()) {
                 CoroutineScope(Dispatchers.IO).launch {
-                    if(listOfPayment.size > 0 && paymentMode.isNullOrEmpty()) paymentMode = listOfPayment[0].name
+                    if(listOfPayment.size > 0 && paymentMode.isNullOrEmpty()) paymentMode = listOfPayment[2].name
 
                     var restoreId = 0
                     if(isRestore) restoreId = id
@@ -133,7 +147,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                         val amount = Amount(
                             name = binding.etNote.text.trim().toString(),
                             category = binding.tvCategory.text.trim().toString(),
-                            price = binding.etAmount.text.trim().toString().toDouble(),
+                            price = storeTwoDecimalNumber(binding.etAmount.text.trim().toString().toDouble()),
                             date = System.currentTimeMillis(),
                             payment_mode = paymentMode,
                             ref_id = restoreId,
@@ -141,14 +155,26 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                         )
                         userDao.addAmount(amount)
 
-                        arrayList.add(binding.tvCategory.text.trim().toString())
-                        userDao.addCategory(Category(name = binding.tvCategory.text.trim().toString()))
-
+                        var isCategoryAvailable : Boolean = false
+                        for(i in userDao.readCategory()){
+                            if(i.name.equals(binding.tvCategory.text.toString())){
+                                isCategoryAvailable = true
+                                break
+                            }
+                        }
+                        if(!isCategoryAvailable) {
+                            userDao.addCategory(
+                                Category(
+                                    name = binding.tvCategory.text.trim().toString()
+                                )
+                            )
+                            arrayList.add(binding.tvCategory.text.trim().toString())
+                        }
                         this@AddExpensesActivity.finish()
                         var intent =
                             Intent(this@AddExpensesActivity, DashboardActivity::class.java)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         startActivity(intent)
-
 
                     } else {
                         val amount = Amount(
@@ -191,6 +217,9 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             } else if(isRestore && isIncome && binding.etAmount.text.toString().toDouble() > price){
                 Toast.makeText(this,"Restore Amount should be less than income price",Toast.LENGTH_LONG).show()
                 return false
+            }else if(!isRestore && binding.etAmount.text.toString().toDouble() > incomeAmount){
+                Toast.makeText(this,"Expenses Amount should be less than Saving",Toast.LENGTH_LONG).show()
+                return false
             }
             return true
         }
@@ -210,4 +239,10 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
         finish()
     }
 
+    fun storeTwoDecimalNumber(value: Double): Double {
+        val decimalValue = BigDecimal(value)
+            .setScale(2, RoundingMode.HALF_UP)
+
+        return decimalValue.toDouble()
+    }
 }

@@ -1,19 +1,19 @@
 package com.example.incndex.ui
 
 import android.Manifest
-import android.app.DownloadManager
+import android.app.Activity
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
+import android.provider.OpenableColumns
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -21,31 +21,34 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.example.incndex.R
-import com.example.incndex.RoomDatabaseExporter
+import com.example.incndex.data.RoomDatabaseExporter
+import com.example.incndex.data.Amount
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
 import com.example.incndex.databinding.ActivityDashboardBinding
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.opencsv.CSVReaderBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.BufferedReader
+import org.apache.poi.ss.usermodel.Cell
+import org.apache.poi.ss.usermodel.CellType
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.FileReader
 import java.io.IOException
-import java.io.InputStream
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.net.URI
 import java.net.URISyntaxException
-import java.net.URL
 import java.net.URLDecoder
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 
 class DashboardActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDashboardBinding
@@ -54,38 +57,68 @@ class DashboardActivity : AppCompatActivity() {
 
     var totalIncome: Double = 0.0
     var totalExpenses: Double = 0.0
-    var total: Double = 0.0
-    var isConvert: Boolean = false
+    var isConverted: Boolean = false
 
     private val EXTERNAL_STORAGE_PERMISSION_CODE = 23
+    private val PICK_EXCEL_FILE_REQUEST = 123
     lateinit var file: File
-
+    private val READ_WRITE_PERMISSION_REQUEST_CODE = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        var sharedPreferences = getSharedPreferences("MyPrefs", MODE_PRIVATE)
 
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
         database = UserDatabase.getDatabase(applicationContext)
+        isConverted = sharedPreferences.getBoolean("isFormat", false)
 
+        binding.tvImportExcel.setOnClickListener {
+            checkReadWritePermissions()
+        }
 
         CoroutineScope(Dispatchers.IO).launch {
             if (userDao.readAmount(null,null).isNotEmpty()) {
-                for (i in userDao.readAmount(null,null)) {
-                    if(i.isIncome){
-                        totalIncome += i.price
-                    } else
-                        totalExpenses += i.price
+
+                for (i in userDao.readAmount(null, null)) {
+                    if (i.ref_id == 0) {
+                        if (i.isIncome) {
+                            totalIncome += i.price
+                        } else {
+                            totalExpenses += i.price
+                            totalIncome -= i.price
+
+                        }
+                    } else {
+                        if (i.isIncome) {
+                            totalExpenses -= i.price
+                            totalIncome += i.price
+                        } else {
+                            totalIncome -= i.price
+                            totalExpenses += i.price
+                        }
+                    }
                 }
 
-                binding.tvExpenses.text = totalExpenses.toString()
 
-                if (totalIncome > totalExpenses) {
-                    total = totalIncome - totalExpenses
-                    binding.tvIncome.text = total.toString()
-                } else
-                    binding.tvIncome.text = totalIncome.toString()
+
+
+                if(isConverted)
+                    binding.tvExpenses.text = withSuffix(totalExpenses)
+                else
+                    binding.tvExpenses.text = storeTwoDecimalNumber(totalExpenses).toString()
+
+                if(isConverted)
+                    binding.tvIncome.text = withSuffix(totalIncome)
+                    else
+                    binding.tvIncome.text = storeTwoDecimalNumber(totalIncome).toString()
+
+                if(isConverted)
+                    binding.tvK.setImageResource(R.drawable.number_format)
+                else
+                    binding.tvK.setImageResource(R.drawable.k_format)
+
             }
         }
 
@@ -96,28 +129,32 @@ class DashboardActivity : AppCompatActivity() {
 
         binding.llExpenses.setOnClickListener {
             var intent = Intent(this, AddExpensesActivity::class.java)
+            intent.putExtra("income_amount",totalIncome)
             startActivity(intent)
         }
 
         binding.tvK.setOnClickListener {
-            if (!isConvert) {
-                isConvert = true
-                if (totalIncome > totalExpenses) {
-                    total = totalIncome - totalExpenses
-                    binding.tvIncome.text = withSuffix(total)
-                } else
+            if (!isConverted) {
                     binding.tvIncome.text = withSuffix(totalIncome)
 
                 binding.tvExpenses.text = withSuffix(totalExpenses)
-            } else {
-                isConvert = false
-                if (totalIncome > totalExpenses) {
-                    total = totalIncome - totalExpenses
-                    binding.tvIncome.text = total.toString()
-                } else
-                    binding.tvIncome.text = totalIncome.toString()
+                val editor = sharedPreferences.edit()
+                editor.putBoolean("isFormat", true);
+                editor.commit();
+                isConverted = true
 
-                binding.tvExpenses.text = totalExpenses.toString()
+                binding.tvK.setImageResource(R.drawable.number_format)
+
+            } else {
+                binding.tvIncome.text = storeTwoDecimalNumber(totalIncome).toString()
+
+                binding.tvExpenses.text = storeTwoDecimalNumber(totalExpenses).toString()
+                val editor = sharedPreferences.edit()
+                editor.putBoolean("isFormat", false);
+                editor.commit();
+                isConverted = false
+
+                binding.tvK.setImageResource(R.drawable.k_format)
             }
         }
 
@@ -189,15 +226,15 @@ class DashboardActivity : AppCompatActivity() {
         var numberString = ""
         val format = DecimalFormat("0.#")
 
-        numberString = if (Math.abs(number / 1000000) > 1) {
-            format.format((number / 1000000)).toString() + "M"
-        } else if (Math.abs(number / 100000) > 1) {
+        numberString = if (Math.abs(number / 1000000000) >= 1) {
+            format.format((number / 1000000000)).toString() + "C"
+        } else if (Math.abs(number / 100000) >= 1) {
             format.format((number / 100000)).toString() + "L"
-        }else if (Math.abs(number / 1000) > 1) {
+        }else if (Math.abs(number / 1000) >= 1) {
             format.format((number / 1000)).toString() + "K"
-        }else if (Math.abs(number / 100) > 1) {
+        }else if (Math.abs(number / 100) >= 1) {
             format.format((number / 100)).toString() + "H"
-        }else if (Math.abs(number / 10) > 1) {
+        }else if (Math.abs(number / 10) >= 1) {
             format.format((number / 10)).toString() + "T"
         } else {
             number.toString()
@@ -213,29 +250,54 @@ class DashboardActivity : AppCompatActivity() {
             totalExpenses = 0.0
 
             if (userDao.readAmount(null,null).isNotEmpty()) {
-                for (i in userDao.readAmount(null,null)) {
-                    if(i.isIncome){
-                        totalIncome += i.price
-                    } else
-                        totalExpenses += i.price
-                }
-                binding.tvExpenses.text = totalExpenses.toString()
 
-                if (totalIncome > totalExpenses) {
-                    total = totalIncome - totalExpenses
-                    binding.tvIncome.text = total.toString()
-                } else
-                    binding.tvIncome.text = totalIncome.toString()
+                for (i in userDao.readAmount(null, null)) {
+                    if (i.ref_id == 0) {
+                        if (i.isIncome) {
+                            totalIncome += i.price
+                        } else {
+                            totalExpenses += i.price
+                            totalIncome -= i.price                        }
+                    } else {
+                        if (i.isIncome) {
+                            totalExpenses -= i.price
+                            totalIncome += i.price
+                        } else {
+                            totalIncome -= i.price
+                            totalExpenses += i.price
+                        }
+                    }
+                }
+
+
+                if(isConverted)
+                    binding.tvExpenses.text = withSuffix(totalExpenses)
+                else
+                    binding.tvExpenses.text = storeTwoDecimalNumber(totalExpenses).toString()
+
+                if(isConverted)
+                    binding.tvIncome.text = withSuffix(totalIncome)
+                else
+                    binding.tvIncome.text = storeTwoDecimalNumber(totalIncome).toString()
+
+                if(isConverted)
+                    binding.tvK.setImageResource(R.drawable.number_format)
+                else
+                    binding.tvK.setImageResource(R.drawable.k_format)
+
             }
 
+
             withContext(Dispatchers.Main) {
-                binding.tvExpenses.text = totalExpenses.toString()
+                binding.tvExpenses.text = if(isConverted) withSuffix(totalExpenses) else totalExpenses.toString()
 
+                   if(isConverted) binding.tvIncome.text = withSuffix(totalIncome) else binding.tvIncome.text = storeTwoDecimalNumber(totalIncome).toString()
 
-                if (totalIncome > totalExpenses) {
-                    val total = totalIncome - totalExpenses
-                    binding.tvIncome.text = total.toString()
-                }
+                if(isConverted)
+                    binding.tvK.setImageResource(R.drawable.number_format)
+                else
+                    binding.tvK.setImageResource(R.drawable.k_format)
+
             }
         }
     }
@@ -254,6 +316,16 @@ class DashboardActivity : AppCompatActivity() {
             } else {
                 // Permission denied
                 // Add your code here to handle the denied permission
+            }
+        }
+        if (requestCode == READ_WRITE_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                // Permissions granted, perform desired actions
+
+            } else {
+                // Permissions denied
+                // Handle accordingly, show an explanation, or disable functionality
             }
         }
     }
@@ -357,27 +429,6 @@ class DashboardActivity : AppCompatActivity() {
 
     }
 
-    fun openCSVFile(filePath: String): List<List<String>> {
-        val lines: MutableList<List<String>> = mutableListOf()
-
-        try {
-            val file = File(filePath)
-            val reader = BufferedReader(FileReader(file))
-
-            var line: String?
-            while (reader.readLine().also { line = it } != null) {
-                val data = line!!.split(",")
-                lines.add(data)
-            }
-
-            reader.close()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return lines
-    }
-
     companion object{
 
         private const val CHANNEL_ID = "DownloadChannel"
@@ -385,6 +436,184 @@ class DashboardActivity : AppCompatActivity() {
     }
 
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == PICK_EXCEL_FILE_REQUEST && resultCode == Activity.RESULT_OK) {
+            data?.data?.let { uri ->
+                val uri = data?.data
+                if (uri != null) {
+                    val csvFile = getFileFromUri(uri)
+                    if (csvFile != null) {
+                        val fileName = uri?.let { getFileNameFromUri(it) }
+                        if(fileName?.let { isCsvFile(it) } == true) {
+                            importCsvToDatabase(this, csvFile)
+                        } else {
+                            Toast.makeText(this@DashboardActivity,"Please select csv file",Toast.LENGTH_LONG).show()
+
+                        }
+                        }
+                }
 
 
+            }
+        }
+    }
+
+
+
+    private fun openDownloadFolder() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+        }
+        startActivityForResult(intent, PICK_EXCEL_FILE_REQUEST)
+    }
+
+    private fun checkReadWritePermissions() {
+        val readPermission = Manifest.permission.READ_EXTERNAL_STORAGE
+        val writePermission = Manifest.permission.WRITE_EXTERNAL_STORAGE
+
+        val hasReadPermission = ContextCompat.checkSelfPermission(this, readPermission) == PackageManager.PERMISSION_GRANTED
+        val hasWritePermission = ContextCompat.checkSelfPermission(this, writePermission) == PackageManager.PERMISSION_GRANTED
+
+        if (hasReadPermission && hasWritePermission) {
+            // Permissions already granted, perform desired actions
+            openDownloadFolder()
+
+        } else {
+            // Request permissions
+            requestPermissions(arrayOf(readPermission, writePermission), READ_WRITE_PERMISSION_REQUEST_CODE)
+        }
+    }
+
+    private fun formatCell(cell: Cell): String {
+        return when (cell.cellType) {
+            CellType.STRING -> cell.stringCellValue
+            CellType.NUMERIC -> cell.numericCellValue.toString()
+            CellType.BOOLEAN -> cell.booleanCellValue.toString()
+            else -> ""
+        }
+    }
+
+    private fun getFileFromUri(uri: Uri): File? {
+        // Retrieve the file from the URI
+        // You can use the ContentResolver to open an InputStream and copy the file to a desired location
+
+        // Example implementation using ContentResolver and InputStream:
+        try {
+            val resolver = contentResolver
+            val inputStream = resolver.openInputStream(uri)
+
+            // Create a temporary file to store the data
+            val tempFile = File(cacheDir, "temp_file.csv")
+
+            // Use streams to copy the data from the input stream to the temporary file
+            val outputStream = FileOutputStream(tempFile)
+            val buffer = ByteArray(4096)
+            var bytesRead: Int
+            while (inputStream!!.read(buffer).also { bytesRead = it } != -1) {
+                outputStream.write(buffer, 0, bytesRead)
+            }
+
+            // Close the streams
+            inputStream.close()
+            outputStream.close()
+            return tempFile
+        } catch (e: IOException) {
+            e.printStackTrace()
+            // Handle any errors that occur during file retrieval
+        }
+        return null
+    }
+    fun importCsvToDatabase(context: Context, csvFile: File) {
+
+        GlobalScope.launch(Dispatchers.IO) {
+            userDao.deleteAll()
+            val yourEntities = parseCsvFile(csvFile)
+            userDao.insertAll(yourEntities)
+            onRestart()
+            withContext(Dispatchers.Main) {
+                Toast.makeText(
+                    this@DashboardActivity,
+                    "Successfully database restore",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+
+    }
+
+    fun parseCsvFile(csvFile: File): List<Amount> {
+
+        val amount = mutableListOf<Amount>()
+        try {
+            val reader = CSVReaderBuilder(FileReader(csvFile))
+                .withSkipLines(1) // Skip the first line
+                .build()
+
+            var line: Array<String>?
+            while (reader.readNext().also { line = it } != null) {
+                if (line!!.size >= 2) {
+                    var entity : Amount
+                    if(line!![5].isEmpty()){
+                         entity = Amount(
+                            id = line!![0].toInt(),
+                            ref_id = line!![4].toInt(),
+                            name = line!![3].toString(),
+                            category = line!![2].toString(),
+                            price = line!![6].toDouble(),
+                             date = stringDateToLong(line!![1],"dd/MM/yyyy"),
+                            payment_mode = line!![7].toString(),
+                            isIncome = false
+                        )
+                    } else {
+                        entity = Amount(
+                            id = line!![0].toInt(),
+                            ref_id = line!![4].toInt(),
+                            name = line!![3].toString(),
+                            category =  line!![2].toString(),
+                            price = line!![5].toDouble(),
+                            date = stringDateToLong(line!![1],"dd/MM/yyyy"),
+                            payment_mode =  line!![7].toString(),
+                            isIncome = true
+                        )
+                    }
+
+                    amount.add(entity)
+                }
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+
+        return amount
+    }
+    fun stringDateToLong(dateString: String, format: String): Long {
+        val dateFormat = SimpleDateFormat(format, Locale.getDefault())
+        val date = dateFormat.parse(dateString)
+        return date?.time ?: -1L
+    }
+    fun storeTwoDecimalNumber(value: Double): Double {
+        val decimalValue = BigDecimal(value)
+            .setScale(2, RoundingMode.HALF_UP)
+
+        return decimalValue.toDouble()
+    }
+    fun isCsvFile(fileName: String): Boolean {
+        return fileName.endsWith(".csv", ignoreCase = true)
+    }
+    private fun getFileNameFromUri(uri: Uri): String? {
+        val contentResolver = contentResolver
+        var fileName: String? = null
+        val cursor = contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val displayNameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (displayNameIndex != -1) {
+                    fileName = it.getString(displayNameIndex)
+                }
+            }
+        }
+        return fileName
+    }
     }

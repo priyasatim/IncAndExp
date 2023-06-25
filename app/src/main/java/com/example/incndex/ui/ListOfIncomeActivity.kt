@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.incndex.data.Amount
@@ -37,21 +38,31 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
 
         binding.recyclevieiw.layoutManager = LinearLayoutManager(this)
-        adapter = IncomeAdapter(this)
+        adapter = IncomeAdapter(this,this)
         binding.recyclevieiw.adapter = adapter
 
+//        val swipeController = SwipeController()
+//        val itemTouchhelper = ItemTouchHelper(swipeController)
+//        itemTouchhelper.attachToRecyclerView(binding.recyclevieiw)
 
         CoroutineScope(Dispatchers.IO).launch {
-            for(i in userDao.readAmount(null,null))
-            {
-                if(i.isIncome){
+            for (i in userDao.readAmount(null, null)) {
+                if (i.isIncome) {
                     itemList.add(i)
                 }
             }
-            reversedList.addAll(itemList.reversed())
 
-            withContext(Dispatchers.Main) {
+            if(itemList.isEmpty()) {
+                binding.ivNoDataFound.visibility = (if (adapter.itemCount == 0) View.VISIBLE else View.GONE)
+                binding.ivDelete.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+                binding.recyclevieiw.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+                binding.searchIncome.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+            } else {
+                reversedList.addAll(itemList.reversed())
+
+                withContext(Dispatchers.Main) {
                     adapter.updateItemList(reversedList, "")
+                }
             }
         }
 
@@ -79,6 +90,7 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
                 binding.ivNoDataFound.visibility = (if (adapter.itemCount == 0) View.VISIBLE else View.GONE)
                 binding.ivDelete.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
                 binding.recyclevieiw.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
+                binding.searchIncome.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
             }
         })
         binding.searchIncome.setOnQueryTextListener(object : SearchView.OnQueryTextListener {

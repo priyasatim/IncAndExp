@@ -20,6 +20,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageView
+        android:id="@+id/iv_delete"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:padding="12dp"
+        android:src="@drawable/recyclebin"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_title_expenses"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <androidx.appcompat.widget.SearchView
         android:id="@+id/search_expenses"
         android:layout_width="match_parent"
@@ -51,17 +61,6 @@
         />
 
     </ScrollView>
-
-
-    <ImageView
-        android:id="@+id/iv_delete"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="12dp"
-        android:src="@drawable/iv_delete"
-        app:layout_constraintBottom_toBottomOf="@+id/tv_title_expenses"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 
 
     <ImageView

@@ -8,6 +8,7 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.incndex.R
 import com.example.incndex.data.Amount
@@ -19,6 +20,9 @@ import com.example.incndex.databinding.ActivityAddIncomeBinding
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
+import java.math.RoundingMode
+
 
 public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     private lateinit var binding: ActivityAddIncomeBinding
@@ -37,9 +41,13 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         binding.rcPaymentType.layoutManager = LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false)
         paymentAdapter = PaymentAdapter(this,this)
         binding.rcPaymentType.adapter = paymentAdapter
+        val layoutManager = GridLayoutManager(this, 4)
+        binding.rcPaymentType.setLayoutManager(layoutManager)
+        binding.etNote.hint = "Saving Note"
+
 
         listOfPayment.add(PaymentResponse("Card",R.drawable.card,false))
-        listOfPayment.add(PaymentResponse("Net banking",R.drawable.netbanking,false))
+        listOfPayment.add(PaymentResponse("Online",R.drawable.netbanking,false))
         listOfPayment.add(PaymentResponse("Cash",R.drawable.money,true))
         listOfPayment.add(PaymentResponse("UPI",R.drawable.upi,false))
 
@@ -63,9 +71,9 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
                 }
             }
 
-            if(listOfIncome.size > 0){
-                binding.ivList.visibility = View.VISIBLE
-            }
+//            if(listOfIncome.size > 0){
+//                binding.ivList.visibility = View.VISIBLE
+//            }
         }
 
 
@@ -94,19 +102,32 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         binding.tvSubmit.setOnClickListener {
             if (validation()) {
                 CoroutineScope(Dispatchers.IO).launch {
-                    if(listOfPayment.size > 0 && paymentMode.isNullOrEmpty()) paymentMode = listOfPayment[0].name
+                    if(listOfPayment.size > 0 && paymentMode.isNullOrEmpty()) paymentMode = listOfPayment[2].name
                     val amount = Amount(
                         name = binding.etNote.text.trim().toString(),
                         category = binding.tvCategory.text.trim().toString(),
-                        price = binding.etAmount.text.trim().toString().toDouble(),
+                        price = storeTwoDecimalNumber(binding.etAmount.text.trim().toString().toDouble()),
                         date = System.currentTimeMillis(),
                         payment_mode = paymentMode,
                         ref_id = 0,
                         isIncome = true
                     )
                     userDao.addAmount(amount)
-                    userDao.addCategory(Category(name = binding.tvCategory.text.trim().toString()))
-                    arrayList.add(binding.tvCategory.text.trim().toString())
+                    var isCategoryAvailable : Boolean = false
+                    for(i in userDao.readCategory()){
+                        if(i.name == binding.tvCategory.text.toString()){
+                            isCategoryAvailable = true
+                            break
+                        }
+                    }
+                    if(!isCategoryAvailable) {
+                        userDao.addCategory(
+                            Category(
+                                name = binding.tvCategory.text.trim().toString()
+                            )
+                        )
+                        arrayList.add(binding.tvCategory.text.trim().toString())
+                    }
 
 
                     this@AddIncomeActivity.finish()
@@ -138,5 +159,12 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
     }
     override fun onItemClick(position: Int) {
         paymentMode = listOfPayment[position].name
+    }
+
+    fun storeTwoDecimalNumber(value: Double): Double {
+        val decimalValue = BigDecimal(value)
+            .setScale(2, RoundingMode.HALF_UP)
+
+        return decimalValue.toDouble()
     }
 }

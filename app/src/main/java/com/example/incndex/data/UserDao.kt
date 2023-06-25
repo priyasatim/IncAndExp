@@ -31,5 +31,9 @@ fun deleteRefId(refIds: ArrayList<Amount>)
  @Delete
  fun delete(ids: ArrayList<Amount>)
 
+ @Query("DELETE FROM amount_table")
+ fun deleteAll()
 
+ @Insert
+ fun insertAll(persons: List<Amount>)
 }

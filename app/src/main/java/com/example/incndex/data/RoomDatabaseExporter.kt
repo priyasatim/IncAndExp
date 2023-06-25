@@ -1,9 +1,8 @@
-package com.example.incndex
+package com.example.incndex.data
 
 import android.content.Context
 import android.os.Environment
 import androidx.room.Room
-import com.example.incndex.data.UserDatabase
 import com.opencsv.CSVReader
 import java.io.File
 import java.io.FileOutputStream
@@ -34,7 +33,7 @@ public class RoomDatabaseExporter {
                 val writer = OutputStreamWriter(outputStream)
 
                 // Write header to CSV file
-                val header = "Id,Date,Expenses,Ref,Credit,Debit" // Replace with your actual column names
+                val header = "Id,Date,Category,Expenses,Ref,Credit,Debit,Payment Mode" // Replace with your actual column names
                 writer.write(header)
                 writer.write("\n")
 
@@ -43,9 +42,9 @@ public class RoomDatabaseExporter {
                     var rowData : String = ""
 
                     if(data.isIncome){
-                         rowData = "${data.id},${convertLongToTime(data.date)},${data.name},${data.ref_id},${data.price}" // Replace with your actual column values
+                         rowData = "${data.id},${convertLongToTime(data.date)},${data.category},${data.name},${data.ref_id},${data.price},${" "},${data.payment_mode}" // Replace with your actual column values
                     } else
-                        rowData = "${data.id},${convertLongToTime(data.date)},${data.name},${data.ref_id},${""},${data.price}" // Replace with your actual column values
+                        rowData = "${data.id},${convertLongToTime(data.date)},${data.category},${data.name},${data.ref_id},${""},${data.price},${data.payment_mode}" // Replace with your actual column values
 
                     writer.write(rowData)
                     writer.write("\n")
