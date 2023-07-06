@@ -155,21 +155,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                         )
                         userDao.addAmount(amount)
 
-                        var isCategoryAvailable : Boolean = false
-                        for(i in userDao.readCategory()){
-                            if(i.name.equals(binding.tvCategory.text.toString())){
-                                isCategoryAvailable = true
-                                break
-                            }
-                        }
-                        if(!isCategoryAvailable) {
-                            userDao.addCategory(
-                                Category(
-                                    name = binding.tvCategory.text.trim().toString()
-                                )
-                            )
-                            arrayList.add(binding.tvCategory.text.trim().toString())
-                        }
+                        checkAndAddCategory()
                         this@AddExpensesActivity.finish()
                         var intent =
                             Intent(this@AddExpensesActivity, DashboardActivity::class.java)
@@ -188,8 +174,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                         )
                         userDao.addAmount(amount)
 
-                        arrayList.add(binding.tvCategory.text.trim().toString())
-                        userDao.addCategory(Category(name = binding.tvCategory.text.trim().toString()))
+                        checkAndAddCategory()
 
                         this@AddExpensesActivity.finish()
                         var intent =
@@ -202,6 +187,24 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             }
         }
 
+    }
+
+    fun checkAndAddCategory(){
+        var isCategoryAvailable : Boolean = false
+        for(i in userDao.readCategory()){
+            if(i.name.equals(binding.tvCategory.text.toString())){
+                isCategoryAvailable = true
+                break
+            }
+        }
+        if(!isCategoryAvailable) {
+            userDao.addCategory(
+                Category(
+                    name = binding.tvCategory.text.trim().toString()
+                )
+            )
+            arrayList.add(binding.tvCategory.text.trim().toString())
+        }
     }
 
         public fun validation() : Boolean{

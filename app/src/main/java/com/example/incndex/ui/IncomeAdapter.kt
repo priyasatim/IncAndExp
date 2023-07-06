@@ -36,7 +36,7 @@ class IncomeAdapter(var context: Context,var listner : onClickListner) : Recycle
                         ivPayment.setImageResource(R.drawable.card)
                     }
 
-                    "Onlnine" -> {
+                    "Online" -> {
                         ivPayment.setImageResource(R.drawable.netbanking)
                     }
 
