@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.incndex.R
 import com.example.incndex.data.Amount
 import com.example.incndex.data.Category
+import com.example.incndex.data.Note
 import com.example.incndex.data.PaymentResponse
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
@@ -28,6 +29,7 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
     private lateinit var binding: ActivityAddIncomeBinding
     lateinit var userDao : UserDao
     var arrayList = ArrayList<String>()
+    var arrayListOfNote = ArrayList<String>()
     private lateinit var paymentAdapter : PaymentAdapter
     var listOfPayment : ArrayList<PaymentResponse> = arrayListOf()
     var paymentMode : String = ""
@@ -43,8 +45,6 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         binding.rcPaymentType.adapter = paymentAdapter
         val layoutManager = GridLayoutManager(this, 4)
         binding.rcPaymentType.setLayoutManager(layoutManager)
-        binding.etNote.hint = "Saving Note"
-
 
         listOfPayment.add(PaymentResponse("Card",R.drawable.card,false))
         listOfPayment.add(PaymentResponse("Online",R.drawable.netbanking,false))
@@ -59,6 +59,12 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         userDao = UserDatabase.getDatabase(applicationContext).userDao()
 
         CoroutineScope(Dispatchers.IO).launch {
+            if (userDao.readNote().isNotEmpty()) {
+                for (i in userDao.readNote()) {
+                    arrayListOfNote.add(i.name)
+                }
+            }
+
             if (userDao.readCategory().isNotEmpty()) {
                 for (i in userDao.readCategory()) {
                     arrayList.add(i.name)
@@ -76,6 +82,27 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
 //            }
         }
 
+
+
+        binding.tvNote.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                val inputText = s.toString()
+
+                val filteredItems : List<String> = arrayListOfNote.filter { it.contains(inputText, true) }
+
+                var adapter = ArrayAdapter(this@AddIncomeActivity, android.R.layout.simple_dropdown_item_1line, filteredItems)
+
+                binding.tvNote.threshold = 1;//will start working from first character
+                binding.tvNote.setAdapter(adapter);//setting the adapter data into the AutoCompleteTextView
+
+            }
+        })
 
 
         binding.tvCategory.addTextChangedListener(object : TextWatcher {
@@ -98,13 +125,12 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
             }
         })
 
-
         binding.tvSubmit.setOnClickListener {
             if (validation()) {
                 CoroutineScope(Dispatchers.IO).launch {
                     if(listOfPayment.size > 0 && paymentMode.isNullOrEmpty()) paymentMode = listOfPayment[2].name
                     val amount = Amount(
-                        name = binding.etNote.text.trim().toString(),
+                        name = binding.tvNote.text.trim().toString(),
                         category = binding.tvCategory.text.trim().toString(),
                         price = storeTwoDecimalNumber(binding.etAmount.text.trim().toString().toDouble()),
                         date = System.currentTimeMillis(),
@@ -130,6 +156,23 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
                     }
 
 
+                    var isNoteAvailable : Boolean = false
+                    for(i in userDao.readNote()){
+                        if(i.name == binding.tvNote.text.toString()){
+                            isNoteAvailable = true
+                            break
+                        }
+                    }
+                    if(!isNoteAvailable) {
+                        userDao.addNote(
+                            Note(
+                                name = binding.tvNote.text.trim().toString()
+                            )
+                        )
+                        arrayList.add(binding.tvNote.text.trim().toString())
+                    }
+
+
                     this@AddIncomeActivity.finish()
 
                 }
@@ -148,7 +191,7 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         if(binding.tvCategory.text.trim().isEmpty()){
             Toast.makeText(this,"Please Enter Category",Toast.LENGTH_LONG).show()
             return false
-        } else if(binding.etNote.text.trim().toString().isEmpty()){
+        } else if(binding.tvNote.text.trim().toString().isEmpty()){
             Toast.makeText(this,"Please Enter Note",Toast.LENGTH_LONG).show()
             return false
         }else if(binding.etAmount.text.trim().toString().isEmpty() || binding.etAmount.text.trim().toString() == "0.0"){

@@ -29,6 +29,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     lateinit var userDao : UserDao
     var isComingFromList : Boolean = false
     var arrayList = ArrayList<String>()
+    var arrayListOfNote = ArrayList<String>()
     var isRestore : Boolean = false
     var isIncome : Boolean = false
     var price : Double = 0.0
@@ -50,11 +51,11 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             id = intent.getIntExtra("id",0)
             price = intent.getDoubleExtra("price",0.0)
             if(isIncome) binding.etAmount.setText(price.toString())
-            if(isIncome)  binding.etNote.hint = "Expense Note" else binding.etNote.hint = "Saving Note"
+            if(isIncome)  binding.tvNote.hint = "Expense Note" else binding.tvNote.hint = "Saving Note"
 
         } else {
             incomeAmount = intent.getDoubleExtra("income_amount",0.0)
-            binding.etNote.hint = "Expense Note"
+            binding.tvNote.hint = "Expense Note"
         }
 
         if(isRestore && !isIncome)
@@ -84,6 +85,12 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
         }
 
         CoroutineScope(Dispatchers.IO).launch {
+            if (userDao.readNote().isNotEmpty()) {
+                for (i in userDao.readNote()) {
+                    arrayListOfNote.add(i.name)
+                }
+            }
+
             if (userDao.readCategory().isNotEmpty()) {
                 for (i in userDao.readCategory()) {
                     arrayList.add(i.name)
@@ -109,6 +116,25 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             startActivity(intent)
         }
 
+        binding.tvNote.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                val inputText = s.toString()
+
+                val filteredItems : List<String> = arrayListOfNote.filter { it.contains(inputText, true) }
+
+                var adapter = ArrayAdapter(this@AddExpensesActivity, android.R.layout.simple_dropdown_item_1line, filteredItems)
+
+                binding.tvNote.threshold = 1;//will start working from first character
+                binding.tvNote.setAdapter(adapter);//setting the adapter data into the AutoCompleteTextView
+
+            }
+        })
         binding.tvCategory.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
             }
@@ -145,7 +171,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                     if(!isIncome && isRestore)
                     {
                         val amount = Amount(
-                            name = binding.etNote.text.trim().toString(),
+                            name = binding.tvNote.text.trim().toString(),
                             category = binding.tvCategory.text.trim().toString(),
                             price = storeTwoDecimalNumber(binding.etAmount.text.trim().toString().toDouble()),
                             date = System.currentTimeMillis(),
@@ -164,7 +190,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
 
                     } else {
                         val amount = Amount(
-                            name = binding.etNote.text.trim().toString(),
+                            name = binding.tvNote.text.trim().toString(),
                             category = binding.tvCategory.text.trim().toString(),
                             price = binding.etAmount.text.trim().toString().toDouble(),
                             date = System.currentTimeMillis(),
@@ -211,7 +237,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             if(binding.tvCategory.text.trim().isEmpty()){
                 Toast.makeText(this,"Please Enter Category",Toast.LENGTH_LONG).show()
                 return false
-            }else if(binding.etNote.text.trim().toString().isEmpty()){
+            }else if(binding.tvNote.text.trim().toString().isEmpty()){
                 Toast.makeText(this,"Please Enter Note",Toast.LENGTH_LONG).show()
                 return false
             }else if(binding.etAmount.text.trim().toString().isEmpty() || binding.etAmount.text.trim().toString() == "0.0"){

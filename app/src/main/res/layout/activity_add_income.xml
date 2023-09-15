@@ -47,19 +47,24 @@
         android:orientation="vertical"
         android:background="@color/white">
 
-        <EditText
-            android:id="@+id/et_note"
+
+        <AutoCompleteTextView
+            android:id="@+id/tv_note"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:hint="Saving Note"
+            android:paddingVertical="12dp"
+            android:layout_marginTop="16dp"
+            android:paddingHorizontal="8dp"
             android:background="@color/extra_light_grey"
             android:textSize="14sp"
             android:textColor="@color/black"
-            android:paddingHorizontal="8dp"
+            android:drawableTint="@color/dark_grey"
+            android:drawablePadding="8dp"
+            android:hint="Saving Note"
             android:layout_marginHorizontal="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/tv_category"/>
+            app:layout_constraintBottom_toTopOf="@+id/rc_payment_type" />
 
         <AutoCompleteTextView
             android:id="@+id/tv_category"

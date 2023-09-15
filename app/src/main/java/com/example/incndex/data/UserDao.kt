@@ -17,11 +17,17 @@ interface UserDao {
  @Insert(onConflict = OnConflictStrategy.IGNORE)
  fun addCategory(category : Category)
 
+ @Insert(onConflict = OnConflictStrategy.IGNORE)
+ fun addNote(note : Note)
+
  @Query("SELECT * FROM amount_table WHERE (:startDate IS NULL OR date >= :startDate) AND (:endDate IS NULL OR date <= :endDate)")
  fun readAmount(startDate: Long?, endDate: Long?) : List<Amount>
 
  @Query("SELECT * FROM category")
  fun readCategory() : List<Category>
+
+ @Query("SELECT * FROM note")
+ fun readNote() : List<Note>
 
 @Delete
 fun deleteRefId(refIds: ArrayList<Amount>)
