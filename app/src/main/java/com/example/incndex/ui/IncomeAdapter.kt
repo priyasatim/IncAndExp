@@ -14,7 +14,7 @@ import com.example.incndex.databinding.ItemRecordBinding
 import java.text.SimpleDateFormat
 import java.util.Date
 
-class IncomeAdapter(var context: Context,var listner : onClickListner) : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
+class IncomeAdapter(var context: Context,var listner : onClickListner?) : RecyclerView.Adapter<IncomeAdapter.ViewHolder>() {
     private lateinit var binding: ItemRecordBinding
 
     private var itemList: ArrayList<Amount> = ArrayList()
@@ -31,28 +31,30 @@ class IncomeAdapter(var context: Context,var listner : onClickListner) : Recycle
                 tvAmount.text = "₹ " + item.price.toString()
                 tvAmount.setTextColor(ContextCompat.getColor(context, R.color.green));
 
-                when (item.payment_mode) {
-                    "Card" -> {
-                        ivPayment.setImageResource(R.drawable.card)
-                    }
-
-                    "Online" -> {
-                        ivPayment.setImageResource(R.drawable.netbanking)
-                    }
-
-                    "Cash" -> {
-                        ivPayment.setImageResource(R.drawable.money)
-                    }
-
-                    "UPI" -> {
-                        ivPayment.setImageResource(R.drawable.upi)
-                    }
-                }
+//                when (item.payment_mode) {
+//                    "Card" -> {
+//                        ivPayment.setImageResource(R.drawable.card)
+//                    }
+//
+//                    "Online" -> {
+//                        ivPayment.setImageResource(R.drawable.netbanking)
+//                    }
+//
+//                    "Cash" -> {
+//                        ivPayment.setImageResource(R.drawable.money)
+//                    }
+//
+//                    "UPI" -> {
+//                        ivPayment.setImageResource(R.drawable.upi)
+//                    }
+//                }
                 chRecord.setOnCheckedChangeListener { _, isChecked ->
-                    listner.onDelete(item, isChecked)
+                    listner?.onSelect(item, isChecked)
                 }
-                tvRestore.setOnClickListener {
-                    listner.onRestore(item)
+
+                constraintRecord.setOnClickListener {
+                    listner?.onBalance(item)
+
                 }
 
 
@@ -78,9 +80,12 @@ class IncomeAdapter(var context: Context,var listner : onClickListner) : Recycle
     }
 
     // Update item list and perform search using DiffUtil
-    fun updateItemList(newItemList: List<Amount>, query: String) {
+    fun updateItemList(newItemList: List<Amount>, query: String, isCategoryfilter : Boolean) {
         val filteredList = if (query.isNotEmpty()) {
-            newItemList.filter { it.name.contains(query, ignoreCase = true) }
+            if (isCategoryfilter)
+                newItemList.filter { it.category.contains(query, ignoreCase = true) }
+            else
+                newItemList.filter { it.name.contains(query, ignoreCase = true) }
         } else {
             newItemList
         }
@@ -119,8 +124,8 @@ class IncomeAdapter(var context: Context,var listner : onClickListner) : Recycle
         }
     }
     interface onClickListner{
-        fun onDelete(income : Amount, isCheck : Boolean)
-        fun onRestore(income : Amount)
+        fun onSelect(income : Amount, isCheck : Boolean)
+        fun onBalance(income : Amount)
     }
     fun removeItem(position: Int) {
         filteredItemList.removeAt(position)
@@ -128,7 +133,7 @@ class IncomeAdapter(var context: Context,var listner : onClickListner) : Recycle
     }
     fun convertLongToTime(time: Long): String {
         val date = Date(time)
-        val format = SimpleDateFormat("dd/MM/yyyy")
+        val format = SimpleDateFormat("dd.MM.yyyy")
         return format.format(date)
     }
 }

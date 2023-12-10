@@ -12,9 +12,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
-import android.util.Log
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -67,6 +70,7 @@ class DashboardActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
+
         setContentView(binding.root)
         var sharedPreferences = getSharedPreferences("MyPrefs", MODE_PRIVATE)
 
@@ -115,9 +119,9 @@ class DashboardActivity : AppCompatActivity() {
                     binding.tvIncome.text = storeTwoDecimalNumber(totalIncome).toString()
 
                 if(isConverted)
-                    binding.tvK.setImageResource(R.drawable.number_format)
+                    binding.tvK.setImageResource(R.drawable.ic_number_format)
                 else
-                    binding.tvK.setImageResource(R.drawable.k_format)
+                    binding.tvK.setImageResource(R.drawable.ic_k_format)
 
             }
         }
@@ -143,7 +147,7 @@ class DashboardActivity : AppCompatActivity() {
                 editor.commit();
                 isConverted = true
 
-                binding.tvK.setImageResource(R.drawable.number_format)
+                binding.tvK.setImageResource(R.drawable.ic_number_format)
 
             } else {
                 binding.tvIncome.text = storeTwoDecimalNumber(totalIncome).toString()
@@ -154,7 +158,7 @@ class DashboardActivity : AppCompatActivity() {
                 editor.commit();
                 isConverted = false
 
-                binding.tvK.setImageResource(R.drawable.k_format)
+                binding.tvK.setImageResource(R.drawable.ic_k_format)
             }
         }
 
@@ -281,9 +285,9 @@ class DashboardActivity : AppCompatActivity() {
                     binding.tvIncome.text = storeTwoDecimalNumber(totalIncome).toString()
 
                 if(isConverted)
-                    binding.tvK.setImageResource(R.drawable.number_format)
+                    binding.tvK.setImageResource(R.drawable.ic_number_format)
                 else
-                    binding.tvK.setImageResource(R.drawable.k_format)
+                    binding.tvK.setImageResource(R.drawable.ic_k_format)
 
             }
 
@@ -294,9 +298,9 @@ class DashboardActivity : AppCompatActivity() {
                    if(isConverted) binding.tvIncome.text = withSuffix(totalIncome) else binding.tvIncome.text = storeTwoDecimalNumber(totalIncome).toString()
 
                 if(isConverted)
-                    binding.tvK.setImageResource(R.drawable.number_format)
+                    binding.tvK.setImageResource(R.drawable.ic_number_format)
                 else
-                    binding.tvK.setImageResource(R.drawable.k_format)
+                    binding.tvK.setImageResource(R.drawable.ic_k_format)
 
             }
         }
@@ -336,7 +340,7 @@ class DashboardActivity : AppCompatActivity() {
         val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Download in progress")
             .setContentText(fileName)
-            .setSmallIcon(R.drawable.jt)
+            .setSmallIcon(R.drawable.ic_spend_thrift)
             .setProgress(0, 0, true)
 
         val notificationManager = NotificationManagerCompat.from(context)
@@ -414,7 +418,7 @@ class DashboardActivity : AppCompatActivity() {
             .setContentTitle("Download Complete")
             .setContentText(file.name)
             .setContentIntent(pendingIntent)
-            .setSmallIcon(R.drawable.jt)
+            .setSmallIcon(R.drawable.ic_spend_thrift)
             .setAutoCancel(true)
 
         val notificationManager = NotificationManagerCompat.from(context)
@@ -564,8 +568,7 @@ class DashboardActivity : AppCompatActivity() {
                             price = line!![6].toDouble(),
                              date = stringDateToLong(line!![1],"dd/MM/yyyy"),
                             payment_mode = line!![7].toString(),
-                            isIncome = false
-                        )
+                            isIncome = false)
                     } else {
                         entity = Amount(
                             id = line!![0].toInt(),

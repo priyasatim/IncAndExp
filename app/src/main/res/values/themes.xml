@@ -8,4 +8,6 @@
     <style name="MyDatePickerDialogTheme" parent="ThemeOverlay.MaterialComponents.MaterialCalendar">
         <item name="colorPrimary">@color/black</item>
     </style>
+    <style name="AppBottomSheetDialogTheme" parent="Theme.MaterialComponents.BottomSheetDialog">
+    </style>
 </resources>

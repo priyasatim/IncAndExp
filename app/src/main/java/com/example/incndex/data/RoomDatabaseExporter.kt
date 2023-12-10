@@ -76,7 +76,7 @@ public class RoomDatabaseExporter {
 
         fun convertLongToTime(time: Long): String {
             val date = Date(time)
-            val format = SimpleDateFormat("dd/MM/yyyy")
+            val format = SimpleDateFormat("dd.MM.yyyy")
             return format.format(date)
         }
     }

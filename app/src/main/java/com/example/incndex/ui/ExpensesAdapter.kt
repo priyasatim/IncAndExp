@@ -52,13 +52,12 @@ class ExpensesAdapter(var context : Context,var listner : onClickListner, var us
 
 
                 chRecord.setOnCheckedChangeListener { _, isChecked ->
-                    listner.onDelete(item,isChecked)
+                    listner.onSelect(item,isChecked)
                 }
+                constraintRecord.setOnClickListener {
+                    listner?.onBalance(item)
 
-                tvRestore.setOnClickListener {
-                    listner.onRestore(item)
                 }
-
             }
         }
 
@@ -81,9 +80,12 @@ class ExpensesAdapter(var context : Context,var listner : onClickListner, var us
     }
 
     // Update item list and perform search using DiffUtil
-    fun updateItemList(newItemList: ArrayList<Amount>, query: String) {
+    fun updateItemList(newItemList: ArrayList<Amount>, query: String, isCategoryfilter : Boolean) {
         val filteredList = if (query.isNotEmpty()) {
-            newItemList.filter { it.name.contains(query, ignoreCase = true) }
+            if (isCategoryfilter)
+                newItemList.filter { it.category.contains(query, ignoreCase = true) }
+            else
+                newItemList.filter { it.name.contains(query, ignoreCase = true) }
         } else {
             newItemList
         }
@@ -96,7 +98,9 @@ class ExpensesAdapter(var context : Context,var listner : onClickListner, var us
         filteredItemList.clear()
         filteredItemList.addAll(filteredList)
 
+        Log.d("filteredItemList",""+filteredItemList.size)
         diffResult.dispatchUpdatesTo(this)
+
     }
 
     // DiffUtil callback class
@@ -122,14 +126,14 @@ class ExpensesAdapter(var context : Context,var listner : onClickListner, var us
         }
     }
     interface onClickListner{
-        fun onDelete(amount : Amount, ischeck : Boolean)
-        fun onRestore(amount : Amount)
+        fun onSelect(amount : Amount, ischeck : Boolean)
+        fun onBalance(income : Amount)
 
     }
 
     fun convertLongToTime(time: Long): String {
         val date = Date(time)
-        val format = SimpleDateFormat("dd/MM/yyyy")
+        val format = SimpleDateFormat("dd.MM.yyyy")
         return format.format(date)
     }
 }

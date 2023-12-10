@@ -4,7 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/recycle_grey"
     tools:context=".ui.ListOfIncomeActivity">
 
     <TextView
@@ -13,39 +12,44 @@
         android:layout_height="wrap_content"
         android:paddingVertical="16dp"
         android:text="Expenses History"
+        android:visibility="gone"
         android:layout_marginStart="12dp"
         android:textSize="16sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@id/iv_delete"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <ImageView
-        android:id="@+id/iv_delete"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:padding="12dp"
-        android:src="@drawable/recyclebin"
-        app:layout_constraintBottom_toBottomOf="@+id/tv_title_expenses"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.appcompat.widget.SearchView
         android:id="@+id/search_expenses"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/white"
         android:iconifiedByDefault="false"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_title_expenses"
+        app:layout_constraintEnd_toStartOf="@+id/iv_filter"/>
+
+    <ImageView
+        android:id="@+id/iv_filter"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:src="@drawable/iv_filter"
+        android:padding="8dp"
+        android:background="@color/white"
+        app:layout_constraintTop_toTopOf="@+id/search_expenses"
+        app:layout_constraintBottom_toBottomOf="@+id/search_expenses"
+        app:layout_constraintStart_toEndOf="@+id/search_expenses"
+        app:layout_constraintTop_toBottomOf="@id/tv_title_expenses"
         app:layout_constraintEnd_toEndOf="parent"/>
+
 
     <ScrollView
         android:id="@+id/sv_expenses"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@+id/search_expenses"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/iv_delete"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -59,6 +63,31 @@
         />
 
     </ScrollView>
+    <TextView
+        android:id="@+id/iv_delete"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:text="Delete"
+        android:background="@drawable/light_border_box"
+        android:layout_margin="12dp"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/iv_restore"/>
+
+    <TextView
+        android:id="@+id/iv_restore"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:text="Restore"
+        android:gravity="center"
+        android:background="@drawable/light_border_box"
+        android:layout_margin="12dp"
+        app:layout_constraintStart_toEndOf="@+id/iv_delete"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 
     <ImageView
@@ -66,9 +95,9 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:src="@drawable/iv_no_data_found"
-        android:visibility="gone"
         android:background="@color/white"
         android:layout_marginTop="12dp"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@+id/search_expenses"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

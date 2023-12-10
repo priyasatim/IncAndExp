@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.incndex.R
 import com.example.incndex.data.Amount
 import com.example.incndex.data.Category
+import com.example.incndex.data.Note
 import com.example.incndex.data.PaymentResponse
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
@@ -35,6 +36,8 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     var price : Double = 0.0
     var incomeAmount : Double = 0.0
     var id : Int = 0
+    var name : String = ""
+    var category : String = ""
     private lateinit var paymentAdapter : PaymentAdapter
     var listOfPayment : ArrayList<PaymentResponse> = arrayListOf()
     var listOfExpenses : ArrayList<Amount> = arrayListOf()
@@ -49,8 +52,16 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
             isRestore = true
             isIncome = intent.getBooleanExtra("isIncome",false)
             id = intent.getIntExtra("id",0)
+            name = intent.getStringExtra("name")?:""
+            category = intent.getStringExtra("category")?:""
             price = intent.getDoubleExtra("price",0.0)
-            if(isIncome) binding.etAmount.setText(price.toString())
+            if(isIncome) {
+                binding.etAmount.setText(price.toString())
+            }
+
+            binding.tvNote.setText(name)
+            binding.tvCategory.setText(category)
+
             if(isIncome)  binding.tvNote.hint = "Expense Note" else binding.tvNote.hint = "Saving Note"
 
         } else {
@@ -167,7 +178,10 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                     if(listOfPayment.size > 0 && paymentMode.isNullOrEmpty()) paymentMode = listOfPayment[2].name
 
                     var restoreId = 0
-                    if(isRestore) restoreId = id
+                    if(isRestore) {
+
+                        restoreId = id
+                    }
                     if(!isIncome && isRestore)
                     {
                         val amount = Amount(
@@ -177,7 +191,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                             date = System.currentTimeMillis(),
                             payment_mode = paymentMode,
                             ref_id = restoreId,
-                            isIncome = true
+                            isIncome = true,
                         )
                         userDao.addAmount(amount)
 
@@ -196,7 +210,7 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
                             date = System.currentTimeMillis(),
                             payment_mode = paymentMode,
                             ref_id = restoreId,
-                            isIncome = false
+                            isIncome = false,
                         )
                         userDao.addAmount(amount)
 
@@ -216,6 +230,8 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
     }
 
     fun checkAndAddCategory(){
+        checkAndAddNote()
+
         var isCategoryAvailable : Boolean = false
         for(i in userDao.readCategory()){
             if(i.name.equals(binding.tvCategory.text.toString())){
@@ -233,6 +249,23 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
         }
     }
 
+    fun checkAndAddNote(){
+        var isNoteAvailable : Boolean = false
+        for(i in userDao.readNote()){
+            if(i.name.equals(binding.tvNote.text.toString())){
+                isNoteAvailable = true
+                break
+            }
+        }
+        if(!isNoteAvailable) {
+            userDao.addNote(
+                Note(
+                    name = binding.tvNote.text.trim().toString()
+                )
+            )
+            arrayListOfNote.add(binding.tvNote.text.trim().toString())
+        }
+    }
         public fun validation() : Boolean{
             if(binding.tvCategory.text.trim().isEmpty()){
                 Toast.makeText(this,"Please Enter Category",Toast.LENGTH_LONG).show()
@@ -259,11 +292,6 @@ class AddExpensesActivity : AppCompatActivity(),PaymentAdapter.onClickListner {
 
     override fun onBackPressed() {
         super.onBackPressed()
-        val parentActivityClass = DashboardActivity::class.java // Replace with the class of your parent activity
-
-        val intent = Intent(this, parentActivityClass)
-        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-        startActivity(intent)
 
         finish()
     }

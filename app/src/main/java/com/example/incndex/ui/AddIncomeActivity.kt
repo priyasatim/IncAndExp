@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -136,9 +135,10 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
                         date = System.currentTimeMillis(),
                         payment_mode = paymentMode,
                         ref_id = 0,
-                        isIncome = true
-                    )
+                        isIncome = true)
                     userDao.addAmount(amount)
+
+                    checkAndAddNote()
                     var isCategoryAvailable : Boolean = false
                     for(i in userDao.readCategory()){
                         if(i.name == binding.tvCategory.text.toString()){
@@ -179,12 +179,30 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
             }
         }
 
+
         binding.ivList.setOnClickListener {
             var intent =
                 Intent(this@AddIncomeActivity, ListOfIncomeActivity::class.java)
             startActivity(intent)
         }
 
+    }
+    fun checkAndAddNote(){
+        var isNoteAvailable : Boolean = false
+        for(i in userDao.readNote()){
+            if(i.name.equals(binding.tvNote.text.toString())){
+                isNoteAvailable = true
+                break
+            }
+        }
+        if(!isNoteAvailable) {
+            userDao.addNote(
+                Note(
+                    name = binding.tvNote.text.trim().toString()
+                )
+            )
+            arrayListOfNote.add(binding.tvNote.text.trim().toString())
+        }
     }
 
     public fun validation() : Boolean{

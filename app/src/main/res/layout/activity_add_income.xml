@@ -11,7 +11,7 @@
         android:id="@+id/iv_list"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:src="@drawable/log"
+        android:src="@drawable/iv_log"
         android:padding="12dp"
         android:layout_gravity="end"
         android:background="@color/white"
@@ -55,7 +55,6 @@
             android:paddingVertical="12dp"
             android:layout_marginTop="16dp"
             android:paddingHorizontal="8dp"
-            android:background="@color/extra_light_grey"
             android:textSize="14sp"
             android:textColor="@color/black"
             android:drawableTint="@color/dark_grey"
@@ -73,8 +72,8 @@
             android:paddingVertical="12dp"
             android:layout_marginTop="16dp"
             android:paddingHorizontal="8dp"
-            android:background="@color/extra_light_grey"
             android:textSize="14sp"
+            android:background="@drawable/border_bottom"
             android:textColor="@color/black"
             android:drawableTint="@color/dark_grey"
             android:drawablePadding="8dp"
@@ -99,7 +98,7 @@
             android:text="Save"
             android:layout_margin="16dp"
             android:textAllCaps="true"
-            android:background="@color/dark_black"
-            android:textColor="@color/white" />
+            android:background="@drawable/light_border_box"
+            android:textColor="@color/black" />
     </LinearLayout>
 </LinearLayout>

@@ -4,21 +4,27 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="com.google.android.googlequicksearchbox.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
-        android:usesCleartextTraffic="true"
         android:allowBackup="true"
-        android:icon="@drawable/jt"
+        android:icon="@drawable/ic_spend_thrift"
         android:label="@string/app_name"
-        android:roundIcon="@drawable/jt"
+        android:roundIcon="@drawable/ic_spend_thrift"
         android:supportsRtl="true"
         android:theme="@style/Theme.IncNdEx"
+        android:usesCleartextTraffic="true"
         tools:targetApi="31">
+        <activity
+            android:name=".ui.RestoreHistoryActivity"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -33,27 +39,25 @@
         <activity
             android:name=".ui.DashboardActivity"
             android:exported="false"
-            android:screenOrientation="portrait"/>
+            android:screenOrientation="portrait" />
         <activity
             android:name=".ui.ListOfIncomeActivity"
             android:exported="false"
             android:parentActivityName=".ui.DashboardActivity"
-            android:screenOrientation="portrait"/>
+            android:screenOrientation="portrait" />
         <activity
             android:name=".ui.ListOfExpensesActivity"
             android:exported="false"
-            android:screenOrientation="portrait"/>
-
+            android:screenOrientation="portrait" />
         <activity
             android:name=".ui.AddExpensesActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
-            android:parentActivityName=".ui.DashboardActivity"/>
+            android:parentActivityName=".ui.DashboardActivity"
+            android:screenOrientation="portrait" />
         <activity
             android:name=".ui.AddIncomeActivity"
             android:exported="false"
-            android:screenOrientation="portrait"
-            />
+            android:screenOrientation="portrait" />
         <activity
             android:name=".ui.SplashScreenActivity"
             android:exported="true"

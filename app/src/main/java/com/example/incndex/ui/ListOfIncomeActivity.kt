@@ -1,5 +1,6 @@
 package com.example.incndex.ui
 
+import android.R
 import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
@@ -9,10 +10,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
-import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.incndex.data.Amount
+import com.example.incndex.data.RestoreData
 import com.example.incndex.data.UserDao
 import com.example.incndex.data.UserDatabase
 import com.example.incndex.databinding.ActivityListOfIncomeBinding
@@ -20,8 +22,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.Serializable
 
-class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
+
+class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner,ListBottomSheetFragment.DataPassListener {
     private lateinit var adapter: IncomeAdapter
     private lateinit var binding: ActivityListOfIncomeBinding
     lateinit var userDao : UserDao
@@ -29,6 +33,7 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
     private var alertDialog: AlertDialog? = null
     var reversedList: ArrayList<Amount> = ArrayList()
     var listParentId = ArrayList<Amount>()
+    var category : String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,10 +45,6 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
         binding.recyclevieiw.layoutManager = LinearLayoutManager(this)
         adapter = IncomeAdapter(this,this)
         binding.recyclevieiw.adapter = adapter
-
-//        val swipeController = SwipeController()
-//        val itemTouchhelper = ItemTouchHelper(swipeController)
-//        itemTouchhelper.attachToRecyclerView(binding.recyclevieiw)
 
         CoroutineScope(Dispatchers.IO).launch {
             for (i in userDao.readAmount(null, null)) {
@@ -61,14 +62,14 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
                 reversedList.addAll(itemList.reversed())
 
                 withContext(Dispatchers.Main) {
-                    adapter.updateItemList(reversedList, "")
+                    adapter.updateItemList(reversedList, "",false)
                 }
             }
         }
 
         binding.searchIncome.onActionViewExpanded();
         binding.searchIncome.clearFocus();
-        binding.searchIncome.queryHint = "Search"
+        binding.searchIncome.queryHint = "Search Note"
 
         adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onChanged() {
@@ -90,12 +91,11 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
                 binding.ivNoDataFound.visibility = (if (adapter.itemCount == 0) View.VISIBLE else View.GONE)
                 binding.ivDelete.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
                 binding.recyclevieiw.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
-                binding.searchIncome.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
             }
         })
         binding.searchIncome.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                adapter.updateItemList(reversedList, query)
+                adapter.updateItemList(reversedList, query,false)
                 adapter.notifyDataSetChanged()
                 binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
                 binding.recyclevieiw.visibility = (if (adapter.filteredItemList.isEmpty()) View.GONE else View.VISIBLE)
@@ -104,7 +104,7 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
             }
 
             override fun onQueryTextChange(newText: String): Boolean {
-                adapter.updateItemList(reversedList, newText)
+                adapter.updateItemList(reversedList, newText,false)
                 adapter.notifyDataSetChanged()
                 binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
                 binding.recyclevieiw.visibility = (if (adapter.filteredItemList.isEmpty()) View.GONE else View.VISIBLE)
@@ -118,6 +118,29 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
                 Toast.makeText(this,"Please select item",Toast.LENGTH_LONG).show()
             } else
             showConfirmationDialog()
+        }
+
+        binding.ivFilter.setOnClickListener {
+            val bottomSheetFragment = ListBottomSheetFragment.newInstance(category)
+            bottomSheetFragment.dataPassListener = this
+            bottomSheetFragment.show(supportFragmentManager, bottomSheetFragment.tag)
+        }
+
+        binding.ivRestore.setOnClickListener {
+            if(listParentId.size == 0) {
+                Toast.makeText(this,"Please select item",Toast.LENGTH_LONG).show()
+
+            } else if(listParentId.size == 1){
+                var intent = Intent(this, AddExpensesActivity::class.java)
+                intent.putExtra("id", listParentId.get(0).id)
+                intent.putExtra("price", listParentId.get(0).price)
+                intent.putExtra("restore", true)
+                intent.putExtra("isIncome", true)
+                startActivity(intent)
+            }  else {
+                Toast.makeText(this,"Only one transaction allowed",Toast.LENGTH_LONG).show()
+
+            }
         }
     }
 
@@ -174,7 +197,7 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
         alertDialog?.show()
     }
 
-    override fun onDelete(item : Amount,isChecked : Boolean) {
+    override fun onSelect(item : Amount,isChecked : Boolean) {
         if(isChecked){
             listParentId.add(item)
         }
@@ -193,14 +216,24 @@ class ListOfIncomeActivity : AppCompatActivity(), IncomeAdapter.onClickListner {
         }
     }
 
-    override fun onRestore(income: Amount) {
-        var intent = Intent(this, AddExpensesActivity::class.java)
-        intent.putExtra("id",income.id)
-        intent.putExtra("price",income.price)
-        intent.putExtra("restore",true)
-        intent.putExtra("isIncome",true)
-        Log.d("ListOfIncomeActivity",""+income.id + " "+ income.price)
+
+
+    override fun onBalance(income: Amount) {
+        val intent = Intent(this@ListOfIncomeActivity, RestoreHistoryActivity::class.java)
+        intent.putExtra("name", income.name)
+        intent.putExtra("category", income.category)
         startActivity(intent)
+    }
+
+    override fun onDataPassed(name: String) {
+        category = name
+        CoroutineScope(Dispatchers.IO).launch {
+            withContext(Dispatchers.Main) {
+                adapter.updateItemList(reversedList, name,true)
+                adapter.notifyDataSetChanged()
+
+            }
+        }
     }
 
 }

@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
-class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListner {
+class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListner,ListBottomSheetFragment.DataPassListener {
     private lateinit var adapter: ExpensesAdapter
     private lateinit var binding: ActivityListOfExpensesBinding
     lateinit var userDao : UserDao
@@ -31,6 +31,7 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
     private var alertDialog: AlertDialog? = null
     var reversedList: ArrayList<Amount> = ArrayList()
     var listParentId = ArrayList<Amount>()
+    var category : String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +45,7 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
         binding.recyclevieiw.adapter = adapter
         binding.searchExpenses.onActionViewExpanded();
         binding.searchExpenses.clearFocus();
-        binding.searchExpenses.queryHint = "Search"
+        binding.searchExpenses.queryHint = "Search Note"
 
         adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onChanged() {
@@ -66,14 +67,13 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
                 binding.ivNoDataFound.visibility = (if (adapter.itemCount == 0) View.VISIBLE else View.GONE)
                 binding.ivDelete.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
                 binding.recyclevieiw.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
-                binding.searchExpenses.visibility = (if (adapter.itemCount == 0) View.GONE else View.VISIBLE)
             }
         })
 
 
         binding.searchExpenses.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String): Boolean {
-                adapter.updateItemList(reversedList, query)
+                adapter.updateItemList(reversedList, query, false)
                 adapter.notifyDataSetChanged()
 
                 binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
@@ -83,7 +83,7 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
             }
 
             override fun onQueryTextChange(newText: String): Boolean {
-                adapter.updateItemList(reversedList, newText)
+                adapter.updateItemList(reversedList, newText, false)
                 adapter.notifyDataSetChanged()
 
                 binding.ivNoDataFound.visibility = (if (adapter.filteredItemList.isEmpty()) View.VISIBLE else View.GONE)
@@ -108,8 +108,9 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
             } else {
 
                 reversedList.addAll(itemList.reversed())
+
                 withContext(Dispatchers.Main) {
-                    adapter.updateItemList(reversedList, "")
+                    adapter.updateItemList(reversedList, "", false)
                 }
             }
         }
@@ -120,6 +121,32 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
                 Toast.makeText(this,"Please select item",Toast.LENGTH_LONG).show()
             } else
                 showConfirmationDialog()
+        }
+
+        binding.ivFilter.setOnClickListener {
+                val bottomSheetFragment = ListBottomSheetFragment.newInstance(category)
+            bottomSheetFragment.dataPassListener = this
+            bottomSheetFragment.show(supportFragmentManager, bottomSheetFragment.tag)
+        }
+
+        binding.ivRestore.setOnClickListener {
+            if (listParentId.size == 0) {
+                Toast.makeText(this, "Please select item", Toast.LENGTH_LONG).show()
+
+            } else if (listParentId.size == 1) {
+                var intent = Intent(this, AddExpensesActivity::class.java)
+                intent.putExtra("id",listParentId.get(0).id)
+                intent.putExtra("name",listParentId.get(0).name)
+                intent.putExtra("category",listParentId.get(0).category)
+                intent.putExtra("payment_mode",listParentId.get(0).payment_mode)
+                intent.putExtra("price",listParentId.get(0).price)
+                intent.putExtra("restore",true)
+                intent.putExtra("isIncome",false)
+                startActivity(intent)
+            } else {
+                Toast.makeText(this,"Only one transaction allowed",Toast.LENGTH_LONG).show()
+
+            }
         }
     }
 
@@ -177,7 +204,7 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
         alertDialog = builder.create()
         alertDialog?.show()
     }
-    override fun onDelete(item: Amount,isChecked : Boolean) {
+    override fun onSelect(item: Amount,isChecked : Boolean) {
         if(isChecked){
             listParentId.add(item)
         }
@@ -196,13 +223,23 @@ class ListOfExpensesActivity : AppCompatActivity(),ExpensesAdapter.onClickListne
         }
     }
 
-    override fun onRestore(amount: Amount) {
-        this.finish()
-        var intent = Intent(this, AddExpensesActivity::class.java)
-        intent.putExtra("id",amount.id)
-        intent.putExtra("price",amount.price)
-        intent.putExtra("restore",true)
-        intent.putExtra("isIncome",false)
+
+
+    override fun onBalance(income: Amount) {
+        val intent = Intent(this@ListOfExpensesActivity, RestoreHistoryActivity::class.java)
+        intent.putExtra("name", income.name)
+        intent.putExtra("category", income.category)
         startActivity(intent)
+    }
+
+    override fun onDataPassed(name: String) {
+        category = name
+        CoroutineScope(Dispatchers.IO).launch {
+            withContext(Dispatchers.Main) {
+                adapter.updateItemList(reversedList, name,true)
+                adapter.notifyDataSetChanged()
+
+            }
+        }
     }
 }
