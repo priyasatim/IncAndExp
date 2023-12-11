@@ -2,6 +2,7 @@ package com.example.incndex.ui
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.incndex.R
 import com.example.incndex.data.Amount
@@ -57,6 +58,18 @@ class RestoreHistoryActivity : AppCompatActivity(), RestoreAdapter.onClickListne
     }
 
     override fun setAmount(amount: Double) {
-        binding.tvTitleBalanceAmount.text = "₹$amount"
+        if(amount == 0.0){
+            binding.tvTitleBalanceAmount.text = "₹$amount"
+            binding.tvTitleBalanceAmount.setTextColor(ContextCompat.getColor(this, R.color.black));
+        } else if(amount < 0.0){
+            val positiveAmount = -amount
+
+            binding.tvTitleBalanceAmount.text = "₹$positiveAmount"
+            binding.tvTitleBalanceAmount.setTextColor(ContextCompat.getColor(this, R.color.red));
+        } else {
+            binding.tvTitleBalanceAmount.text = "₹$amount"
+            binding.tvTitleBalanceAmount.setTextColor(ContextCompat.getColor(this, R.color.green));
+        }
+
     }
 }

@@ -9,10 +9,10 @@
 
     <ImageView
         android:id="@+id/iv_list"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:src="@drawable/iv_log"
-        android:padding="12dp"
+        android:padding="21dp"
         android:layout_gravity="end"
         android:background="@color/white"
         tools:visibility="visible"/>

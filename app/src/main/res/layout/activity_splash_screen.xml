@@ -21,11 +21,12 @@
         android:src="@drawable/ic_spend_thrift"/>
 
     <TextView
+        android:id="@+id/tv_logo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="SPENDTHRIFT"
         android:gravity="center"
-        android:textSize="32dp"
+        android:textSize="40dp"
         android:textStyle="bold"/>
     </LinearLayout>
 

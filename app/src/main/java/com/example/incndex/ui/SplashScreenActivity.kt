@@ -1,6 +1,7 @@
 package com.example.incndex.ui
 
 import android.content.Intent
+import android.graphics.Typeface
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
@@ -20,6 +21,9 @@ class SplashScreenActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitySplashScreenBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val customFont = Typeface.createFromAsset(assets, "ColonnaMT.ttf")
+        binding.tvLogo.typeface = customFont
 
         if(isBiometricSupported()){
             showBiometricPrompt()

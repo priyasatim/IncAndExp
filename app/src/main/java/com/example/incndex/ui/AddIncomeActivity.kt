@@ -45,10 +45,10 @@ public class AddIncomeActivity : AppCompatActivity(),PaymentAdapter.onClickListn
         val layoutManager = GridLayoutManager(this, 4)
         binding.rcPaymentType.setLayoutManager(layoutManager)
 
-        listOfPayment.add(PaymentResponse("Card",R.drawable.card,false))
-        listOfPayment.add(PaymentResponse("Online",R.drawable.netbanking,false))
-        listOfPayment.add(PaymentResponse("Cash",R.drawable.money,true))
-        listOfPayment.add(PaymentResponse("UPI",R.drawable.upi,false))
+        listOfPayment.add(PaymentResponse("Card",R.drawable.ic_card,false))
+        listOfPayment.add(PaymentResponse("Cash",R.drawable.ic_cash,true))
+        listOfPayment.add(PaymentResponse("Online",R.drawable.ic_netbanking,false))
+        listOfPayment.add(PaymentResponse("UPI",R.drawable.ic_upi,false))
 
 
         paymentAdapter.paymentList = listOfPayment
